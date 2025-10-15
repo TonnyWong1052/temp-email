@@ -139,6 +139,9 @@ async def get_mail_detail(token: str, mail_id: str):
     - **token**: 邮箱token
     - **mail_id**: 邮件ID
     """
+    from app.config import settings
+    debug = bool(getattr(settings, "debug_email_fetch", False))
+
     email = storage_service.get_email_by_token(token)
     if not email:
         raise HTTPException(status_code=404, detail="邮箱未找到")
@@ -146,6 +149,47 @@ async def get_mail_detail(token: str, mail_id: str):
     mail = storage_service.get_mail_by_id(token, mail_id)
     if not mail:
         raise HTTPException(status_code=404, detail="邮件未找到")
+
+    # 檢查是否需要從 Cloudflare KV 獲取完整內容
+    # 條件：1) 郵件來自 Cloudflare KV  2) html_content 為空
+    use_kv = should_use_cloudflare_kv(email.address)
+    needs_full_content = use_kv and not mail.html_content
+
+    if needs_full_content:
+        if debug:
+            print(f"[Email Router] Mail {mail_id} has incomplete content, fetching full content from KV")
+
+        # 從 KV 獲取完整郵件內容
+        try:
+            from app.services.kv_mail_service import kv_client
+
+            # 使用 fetch_full_content=True 獲取完整內容
+            full_mails = await kv_client.fetch_mails(email.address, fetch_full_content=True)
+
+            # 查找匹配的郵件
+            full_mail = next((m for m in full_mails if m.id == mail_id), None)
+
+            if full_mail:
+                if debug:
+                    print(f"[Email Router] Found full mail content: content_len={len(full_mail.content) if full_mail.content else 0}, has_html={bool(full_mail.html_content)}")
+
+                # 更新 Storage 中的郵件對象
+                mail.content = full_mail.content
+                mail.html_content = full_mail.html_content
+                mail.to = full_mail.to or mail.to  # 確保 to 字段不為空
+
+                if debug:
+                    print(f"[Email Router] Updated mail in storage with full content")
+            else:
+                if debug:
+                    print(f"[Email Router] Warning: Could not find mail {mail_id} in full content fetch")
+
+        except Exception as e:
+            if debug:
+                print(f"[Email Router] Error fetching full content: {e}")
+                import traceback
+                print(traceback.format_exc())
+            # 獲取失敗時不拋出錯誤，繼續使用現有內容
 
     # 标记为已读
     storage_service.mark_as_read(token, mail_id)
