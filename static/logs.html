@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时日志监控 - 临时邮箱服务</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            background: #0f1419;
+            color: #e4e4e7;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #18181b;
+            border-bottom: 1px solid #27272a;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #ef4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #27272a;
+            color: #e4e4e7;
+            border: 1px solid #3f3f46;
+        }
+
+        .btn-secondary:hover {
+            background: #3f3f46;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .filters {
+            background: #18181b;
+            border-bottom: 1px solid #27272a;
+            padding: 16px 24px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #a1a1aa;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #3f3f46;
+            background: #18181b;
+            color: #a1a1aa;
+        }
+
+        .pill:hover {
+            background: #27272a;
+            color: #e4e4e7;
+        }
+
+        .pill.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #3f3f46;
+            background: #18181b;
+            color: #e4e4e7;
+            font-size: 13px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .stats {
+            background: #18181b;
+            border-bottom: 1px solid #27272a;
+            padding: 12px 24px;
+            display: flex;
+            gap: 24px;
+            font-size: 13px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            color: #a1a1aa;
+        }
+
+        .stat-value {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .log-container {
+            padding: 16px 24px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .log-entry:hover {
+            background: #18181b;
+        }
+
+        .log-entry.new {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-entry.debug { border-left-color: #6b7280; }
+        .log-entry.info { border-left-color: #3b82f6; }
+        .log-entry.warning { border-left-color: #f59e0b; }
+        .log-entry.error { border-left-color: #ef4444; }
+        .log-entry.success { border-left-color: #10b981; }
+
+        .log-timestamp {
+            color: #6b7280;
+            min-width: 90px;
+            flex-shrink: 0;
+        }
+
+        .log-level {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            min-width: 60px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .log-level.debug { background: #374151; color: #9ca3af; }
+        .log-level.info { background: #1e40af; color: #93c5fd; }
+        .log-level.warning { background: #92400e; color: #fbbf24; }
+        .log-level.error { background: #7f1d1d; color: #fca5a5; }
+        .log-level.success { background: #065f46; color: #6ee7b7; }
+
+        .log-type {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            background: #27272a;
+            color: #a1a1aa;
+            min-width: 80px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .log-message {
+            flex: 1;
+            color: #e4e4e7;
+            word-break: break-word;
+        }
+
+        .log-duration {
+            color: #6b7280;
+            font-size: 11px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .log-ip {
+            color: #a1a1aa;
+            font-size: 11px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 3px;
+            padding: 2px 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 24px;
+            color: #71717a;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        #autoScroll:checked + label,
+        #hideStats:checked + label {
+            background: #3b82f6;
+            color: white;
+        }
+
+        /* IP 統計彈窗樣式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 12px;
+            max-width: 1200px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #27272a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #3f3f46;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .ip-stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: #0f1419;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        .ip-table-container {
+            overflow-x: auto;
+        }
+
+        .ip-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .ip-table th {
+            background: #0f1419;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #3f3f46;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .ip-table td {
+            padding: 12px;
+            border-bottom: 1px solid #27272a;
+        }
+
+        .ip-table tr:hover {
+            background: #0f1419;
+        }
+
+        .country-flag {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .request-count {
+            background: #1e40af;
+            color: #93c5fd;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: #a1a1aa;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #3f3f46;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .country-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .country-stat-item {
+            background: #0f1419;
+            border: 1px solid #27272a;
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .country-name {
+            font-weight: 500;
+        }
+
+        .country-count {
+            background: #065f46;
+            color: #6ee7b7;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <span class="status-dot" id="statusDot"></span>
+            <span>实时日志监控</span>
+        </div>
+        <div class="header-actions">
+            <input type="checkbox" id="autoScroll" class="pill" checked hidden>
+            <label for="autoScroll" class="pill">自动滚动</label>
+            <button class="btn btn-secondary" id="pauseBtn">⏸ 暂停</button>
+            <button class="btn btn-primary" id="ipStatsBtn">🌍 IP 统计</button>
+            <button class="btn btn-secondary" id="exportBtn">📥 导出</button>
+            <button class="btn btn-danger" id="clearBtn">🗑 清空</button>
+        </div>
+    </div>
+
+    <div class="filters">
+        <div class="filter-group">
+            <div class="filter-label">日志级别</div>
+            <div class="filter-pills">
+                <div class="pill active" data-level="all">全部</div>
+                <div class="pill" data-level="debug">Debug</div>
+                <div class="pill" data-level="info">Info</div>
+                <div class="pill" data-level="warning">Warning</div>
+                <div class="pill" data-level="error">Error</div>
+                <div class="pill" data-level="success">Success</div>
+            </div>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">日志类型</div>
+            <div class="filter-pills">
+                <div class="pill active" data-type="all">全部</div>
+                <div class="pill" data-type="request">请求</div>
+                <div class="pill" data-type="response">响应</div>
+                <div class="pill" data-type="email_gen">生成邮箱</div>
+                <div class="pill" data-type="code_extract">提取验证码</div>
+                <div class="pill" data-type="llm_call">LLM 调用</div>
+            </div>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">请求方法</div>
+            <div class="filter-pills">
+                <div class="pill active" data-method="all">全部</div>
+                <div class="pill" data-method="GET">GET</div>
+                <div class="pill" data-method="POST">POST</div>
+            </div>
+        </div>
+        <div class="filter-group">
+            <div class="filter-label">高级过滤</div>
+            <div class="filter-pills">
+                <input type="checkbox" id="hideStats" class="pill" checked hidden>
+                <label for="hideStats" class="pill">隐藏统计请求</label>
+            </div>
+        </div>
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜索关键字...">
+        </div>
+    </div>
+
+    <div class="stats" id="stats">
+        <div class="stat-item">
+            <span class="stat-label">总计:</span>
+            <span class="stat-value" id="totalCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">显示:</span>
+            <span class="stat-value" id="displayCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">订阅者:</span>
+            <span class="stat-value" id="subscriberCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">独立IP:</span>
+            <span class="stat-value" id="uniqueIpCount">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">当前IP:</span>
+            <span class="stat-value" id="clientIp">-</span>
+        </div>
+    </div>
+
+    <div class="log-container" id="logContainer">
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">📋</div>
+            <div>等待日志...</div>
+        </div>
+    </div>
+
+    <!-- IP 統計彈窗 -->
+    <div class="modal-overlay" id="ipStatsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span>🌍</span>
+                    <span>IP 地理位置統計</span>
+                </div>
+                <button class="modal-close" id="closeIpStatsBtn">✕ 关闭</button>
+            </div>
+            <div class="modal-body" id="ipStatsModalBody">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <div>正在加载 IP 统计数据...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let logs = [];
+        let isPaused = false;
+        let filters = {
+            level: 'all',
+            types: [],  // 改為數組，支持多選
+            method: 'all',
+            keyword: '',
+            hideStats: true
+        };
+
+        const logContainer = document.getElementById('logContainer');
+        const emptyState = document.getElementById('emptyState');
+        const statusDot = document.getElementById('statusDot');
+        const autoScrollCheckbox = document.getElementById('autoScroll');
+
+        // 检查认证状态
+        async function checkAuth() {
+            try {
+                const response = await fetch('/admin/verify', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    // 未登录，重定向到 admin 页面
+                    window.location.href = '/admin/?redirect=logs';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('认证检查失败:', error);
+                alert('认证失败，请先登录\n\n将跳转到管理页面...');
+                window.location.href = '/admin/';
+                return false;
+            }
+        }
+
+        // 连接 SSE
+        function connectSSE() {
+            eventSource = new EventSource('/admin/logs/stream', { withCredentials: true });
+
+            eventSource.onopen = () => {
+                console.log('SSE 连接已建立');
+                statusDot.classList.remove('disconnected');
+            };
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'connected') {
+                        console.log('日志流已连接');
+                        return;
+                    }
+                    if (!isPaused) {
+                        addLog(data);
+                    }
+                } catch (error) {
+                    console.error('解析日志失败:', error);
+                }
+            };
+
+            eventSource.onerror = (error) => {
+                console.error('SSE 连接错误:', error);
+                statusDot.classList.add('disconnected');
+                
+                // 检查是否为认证错误
+                if (eventSource.readyState === EventSource.CLOSED) {
+                    console.log('连接已关闭，可能是认证失效');
+                    // 重新检查认证
+                    checkAuth().then(isAuth => {
+                        if (isAuth) {
+                            // 如果仍然認證有效，5秒後重連
+                            setTimeout(connectSSE, 5000);
+                        }
+                    });
+                } else {
+                    // 5秒後重連
+                    setTimeout(connectSSE, 5000);
+                }
+            };
+        }
+
+        // 添加日志（用于 SSE 新日志）
+        function addLog(log) {
+            // 标记为新日志
+            log._isNew = true;
+            logs.unshift(log);
+            if (logs.length > 500) {
+                logs = logs.slice(0, 500);  // 只保留最新 500 条
+            }
+            renderLogs();
+        }
+
+        // 渲染日志
+        function renderLogs() {
+            const filtered = filterLogs();
+
+            if (filtered.length === 0) {
+                emptyState.style.display = 'block';
+                logContainer.querySelectorAll('.log-entry').forEach(el => el.remove());
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            // 清空并重新渲染（简单实现，可优化为增量更新）
+            logContainer.querySelectorAll('.log-entry').forEach(el => el.remove());
+
+            filtered.forEach(log => {
+                // 检查是否为新日志（从 SSE 接收的）
+                const isNew = log._isNew === true;
+                const entry = createLogEntry(log, isNew);
+                // 清除标记
+                if (isNew) {
+                    delete log._isNew;
+                }
+                logContainer.appendChild(entry);
+            });
+
+            // 自动滚动
+            if (autoScrollCheckbox.checked) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            document.getElementById('displayCount').textContent = filtered.length;
+        }
+
+        // 创建日志条目
+        function createLogEntry(log, isNew = false) {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${log.level}${isNew ? ' new' : ''}`;
+
+            const timestamp = new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour12: false });
+            const logType = (log.type || log.log_type || log.category || '').toString();
+            const ip = ((log.details && (log.details.client_ip || log.details.ip)) || log.client_ip || '').toString();
+
+            let html = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-level ${log.level}">${log.level}</span>
+                <span class="log-type">${logType}</span>
+                ${ip ? `<span class=\"log-ip\">${ip}</span>` : ''}
+                <span class="log-message">${escapeHtml(log.message)}</span>
+            `;
+
+            if (log.duration_ms !== null && log.duration_ms !== undefined) {
+                html += `<span class="log-duration">${log.duration_ms.toFixed(0)}ms</span>`;
+            }
+
+            entry.innerHTML = html;
+
+            // 只有新日志才移除动画类
+            if (isNew) {
+                setTimeout(() => entry.classList.remove('new'), 300);
+            }
+
+            return entry;
+        }
+
+        // 过滤日志
+        function filterLogs() {
+            return logs.filter(log => {
+                // 级别过滤
+                if (filters.level !== 'all' && log.level !== filters.level) {
+                    return false;
+                }
+
+                // 类型过滤（支持多选）
+                if (filters.types.length > 0) {
+                    const logType = (log.type || log.log_type || log.category || '').toString().toLowerCase();
+
+                    // 检查日志类型是否在选中的类型列表中
+                    let matchedType = filters.types.includes(logType);
+
+                    // 如果直接匹配失败，尝试端点映射
+                    if (!matchedType) {
+                        const path = (
+                            (log.details && (log.details.path || log.details.url)) ||
+                            ((log.message || '').split(' ')[1]) ||
+                            ''
+                        ).toString();
+
+                        // 对每个选中的类型进行映射检查
+                        for (const selectedType of filters.types) {
+                            if (selectedType === 'email_gen' && path.includes('/api/email/generate')) {
+                                matchedType = true;
+                                break;
+                            }
+                            if (selectedType === 'code_extract' && path.includes('/codes')) {
+                                matchedType = true;
+                                break;
+                            }
+                            if (selectedType === 'llm_call' && (path.includes('/codes') || path.includes('/llm'))) {
+                                matchedType = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!matchedType) {
+                        return false;
+                    }
+                }
+
+                // 方法过滤
+                const method = ((log.details && (log.details.method || log.details.http_method)) || log.method || ((log.message || '').split(' ')[0] || '')).toString().toUpperCase();
+                if (filters.method !== 'all' && method !== filters.method) {
+                    return false;
+                }
+
+                // 隐藏统计请求
+                if (filters.hideStats) {
+                    const msg = (log.message || '').toString();
+                    const path = (log.details && (log.details.path || log.details.url || '')) || '';
+                    if (msg.includes('/admin/logs/stats') || path.includes('/admin/logs/stats')) {
+                        return false;
+                    }
+                }
+
+                // 关键字过滤
+                if (filters.keyword) {
+                    const keyword = filters.keyword.toLowerCase();
+                    const searchText = (log.message + JSON.stringify(log.details || {})).toLowerCase();
+                    if (!searchText.includes(keyword)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+
+        // 载入历史日志
+        async function loadHistoryLogs() {
+            try {
+                const response = await fetch('/admin/logs/history?limit=500', { credentials: 'include' });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.logs.length > 0) {
+                        // 将历史日志添加到数组（不触发动画）
+                        logs = data.logs;
+                        console.log(`✅ 载入了 ${logs.length} 条历史日志`);
+                        renderLogs();
+                        updateStats();
+                    }
+                }
+            } catch (error) {
+                console.error('载入历史日志失败:', error);
+            }
+        }
+
+        // 更新统计
+        function updateStats() {
+            document.getElementById('totalCount').textContent = logs.length;
+
+            // 获取订阅者数量（从后端）
+            fetch('/admin/logs/stats', { credentials: 'include' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('subscriberCount').textContent = data.stats.subscribers;
+                        document.getElementById('uniqueIpCount').textContent = data.stats.unique_ips || 0;
+                    }
+                })
+                .catch(err => console.error('获取统计失败:', err));
+        }
+
+        // 过滤器事件
+        document.querySelectorAll('[data-level]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('[data-level]').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                filters.level = pill.dataset.level;
+                renderLogs();
+            });
+        });
+
+        // 日志类型多选事件
+        document.querySelectorAll('[data-type]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const type = pill.dataset.type;
+
+                if (type === 'all') {
+                    // 点击"全部"：清空所有选择，只选中"全部"
+                    filters.types = [];
+                    document.querySelectorAll('[data-type]').forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                } else {
+                    // 点击具体类型：切换选中状态
+                    const allPill = document.querySelector('[data-type="all"]');
+                    allPill.classList.remove('active');  // 取消"全部"的选中
+
+                    if (pill.classList.contains('active')) {
+                        // 已选中，取消选中
+                        pill.classList.remove('active');
+                        filters.types = filters.types.filter(t => t !== type);
+
+                        // 如果没有任何选中，自动选中"全部"
+                        if (filters.types.length === 0) {
+                            allPill.classList.add('active');
+                        }
+                    } else {
+                        // 未选中，添加到选中列表
+                        pill.classList.add('active');
+                        filters.types.push(type);
+                    }
+                }
+
+                renderLogs();
+            });
+        });
+
+        // 方法过滤事件
+        document.querySelectorAll('[data-method]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('[data-method]').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                filters.method = pill.dataset.method;
+                renderLogs();
+            });
+        });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            filters.keyword = e.target.value;
+            renderLogs();
+        });
+
+        // 隐藏统计请求切换
+        const hideStatsCheckbox = document.getElementById('hideStats');
+        hideStatsCheckbox.addEventListener('change', () => {
+            filters.hideStats = hideStatsCheckbox.checked;
+            renderLogs();
+        });
+
+        // 暂停/继续
+        document.getElementById('pauseBtn').addEventListener('click', (e) => {
+            isPaused = !isPaused;
+            e.target.textContent = isPaused ? '▶️ 继续' : '⏸ 暂停';
+        });
+
+        // 清空日志
+        document.getElementById('clearBtn').addEventListener('click', async () => {
+            if (!confirm('确定要清空所有日志吗？')) return;
+
+            try {
+                const response = await fetch('/admin/logs/clear', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    logs = [];
+                    renderLogs();
+                    updateStats();
+                }
+            } catch (error) {
+                alert('清空失败: ' + error.message);
+            }
+        });
+
+        // 导出日志
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const filtered = filterLogs();
+            const text = filtered.map(log => {
+                const time = new Date(log.timestamp).toISOString();
+                const logType = (log.type || log.log_type || log.category || '').toString();
+                return `[${time}] [${log.level.toUpperCase()}] [${logType}] ${log.message}`;
+            }).join('\n');
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `logs-${new Date().toISOString().slice(0, 19)}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // IP 統計功能
+        const ipStatsModal = document.getElementById('ipStatsModal');
+        const ipStatsModalBody = document.getElementById('ipStatsModalBody');
+        const ipStatsBtn = document.getElementById('ipStatsBtn');
+        const closeIpStatsBtn = document.getElementById('closeIpStatsBtn');
+
+        // 國家代碼到國旗 emoji 的映射
+        function getCountryFlag(countryCode) {
+            if (!countryCode || countryCode === '-') return '🏳️';
+            const codePoints = countryCode
+                .toUpperCase()
+                .split('')
+                .map(char => 127397 + char.charCodeAt());
+            return String.fromCodePoint(...codePoints);
+        }
+
+        // 打開 IP 統計彈窗
+        async function openIpStats() {
+            ipStatsModal.classList.add('active');
+            ipStatsModalBody.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <div>正在加载 IP 统计数据...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/admin/logs/ip-stats', { credentials: 'include' });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    renderIpStats(data);
+                } else {
+                    throw new Error(data.message || '获取 IP 统计失败');
+                }
+            } catch (error) {
+                console.error('加載 IP 統計失敗:', error);
+                ipStatsModalBody.innerHTML = `
+                    <div class="error-message">
+                        <strong>❌ 加载失败</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 渲染 IP 統計數據
+        function renderIpStats(data) {
+            const { total_ips, total_requests, ips, country_stats } = data;
+
+            let html = `
+                <!-- 統計摘要 -->
+                <div class="ip-stats-summary">
+                    <div class="summary-card">
+                        <div class="summary-label">唯一 IP 数量</div>
+                        <div class="summary-value">${total_ips}</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">总请求次数</div>
+                        <div class="summary-value">${total_requests}</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">国家/地区</div>
+                        <div class="summary-value">${Object.keys(country_stats || {}).length}</div>
+                    </div>
+                </div>
+            `;
+
+            // 國家統計
+            if (country_stats && Object.keys(country_stats).length > 0) {
+                html += `
+                    <h3 style="margin-bottom: 12px; font-size: 16px;">🌏 按国家统计</h3>
+                    <div class="country-stats-grid">
+                `;
+
+                for (const [country, count] of Object.entries(country_stats)) {
+                    html += `
+                        <div class="country-stat-item">
+                            <span class="country-name">${country}</span>
+                            <span class="country-count">${count} 次请求</span>
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+            }
+
+            // IP 列表表格
+            html += `
+                <h3 style="margin: 24px 0 12px; font-size: 16px;">📍 IP 详细列表</h3>
+                <div class="ip-table-container">
+                    <table class="ip-table">
+                        <thead>
+                            <tr>
+                                <th>IP 地址</th>
+                                <th>国家/地区</th>
+                                <th>省份</th>
+                                <th>城市</th>
+                                <th>ISP</th>
+                                <th style="text-align: right;">请求次数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            ips.forEach(item => {
+                const flag = getCountryFlag(item.country_code);
+                const status = item.status || 'unknown';
+                const rowClass = status === 'success' ? '' : 'opacity: 0.6;';
+
+                html += `
+                    <tr style="${rowClass}">
+                        <td><code>${item.ip}</code></td>
+                        <td>
+                            <span class="country-flag">${flag}</span>
+                            ${item.country}
+                        </td>
+                        <td>${item.region || '-'}</td>
+                        <td>${item.city || '-'}</td>
+                        <td style="font-size: 12px; color: #a1a1aa;">${item.isp || '-'}</td>
+                        <td style="text-align: right;">
+                            <span class="request-count">${item.requests}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            ipStatsModalBody.innerHTML = html;
+        }
+
+        // 關閉 IP 統計彈窗
+        function closeIpStats() {
+            ipStatsModal.classList.remove('active');
+        }
+
+        // 綁定事件
+        ipStatsBtn.addEventListener('click', openIpStats);
+        closeIpStatsBtn.addEventListener('click', closeIpStats);
+
+        // 點擊遮罩層關閉彈窗
+        ipStatsModal.addEventListener('click', (e) => {
+            if (e.target === ipStatsModal) {
+                closeIpStats();
+            }
+        });
+
+        // ESC 鍵關閉彈窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && ipStatsModal.classList.contains('active')) {
+                closeIpStats();
+            }
+        });
+
+        // 初始化
+        async function init() {
+            // 先检查认证
+            const isAuth = await checkAuth();
+            if (!isAuth) {
+                return; // 未认证，已重定向
+            }
+            
+            // 显示客户端 IP
+            try {
+                const who = await fetch('/admin/whoami', { credentials: 'include' });
+                if (who.ok) {
+                    const info = await who.json();
+                    document.getElementById('clientIp').textContent = info.ip || '-';
+                }
+            } catch (e) {
+                // ignore
+            }
+            
+            // 先载入历史日志
+            await loadHistoryLogs();
+            // 然后连接 SSE 接收新日志
+            connectSSE();
+            // 更新统计
+            updateStats();
+            // 每 3 秒更新一次统计
+            setInterval(updateStats, 3000);
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>

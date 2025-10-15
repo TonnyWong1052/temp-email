@@ -1,0 +1,2503 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统管理中心</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338CA;
+            --primary-light: #EEF2FF;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --gray-50: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+            --gray-400: #9CA3AF;
+            --gray-500: #6B7280;
+            --gray-600: #4B5563;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+            --gray-900: #111827;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: white;
+            border-right: 1px solid var(--gray-200);
+            padding: 24px 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .logo {
+            padding: 0 24px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            padding: 0 16px;
+            margin-bottom: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            color: var(--gray-600);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            background: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .nav-link.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .topbar-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--gray-600);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-ghost:hover {
+            background: var(--gray-100);
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .form-input:disabled {
+            background: var(--gray-100);
+            cursor: not-allowed;
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-top: 6px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            flex-direction: column;
+        }
+
+        .alert.show {
+            display: flex !important;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #10B981;
+        }
+
+        .alert-error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #EF4444;
+        }
+
+        .alert-warning {
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #F59E0B;
+        }
+
+        .alert-info {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid var(--primary);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-warning {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-info {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #loginContainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            padding: 48px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            margin: 0 auto 16px;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+
+        #configContainer {
+            display: none;
+        }
+
+        .section-content {
+            display: none;
+        }
+
+        .section-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .topbar {
+                padding: 16px 20px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .login-card {
+                padding: 32px 24px;
+            }
+        }
+
+        /* 配置向导模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--gray-200);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .wizard-step {
+            margin-bottom: 24px;
+            padding: 20px;
+            border: 2px solid var(--gray-200);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .wizard-step:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .wizard-step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .wizard-step-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-light);
+            border-radius: 10px;
+        }
+
+        .wizard-step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .wizard-step-desc {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 12px;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .wizard-step-hint {
+            font-size: 13px;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .wizard-step-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--gray-50);
+            margin-bottom: 8px;
+        }
+
+        .check-item.passed {
+            background: #D1FAE5;
+            border: 1px solid #10B981;
+        }
+
+        .check-item.failed {
+            background: #FEE2E2;
+            border: 1px solid #EF4444;
+        }
+
+        .check-icon {
+            font-size: 20px;
+        }
+
+        .check-name {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .check-message {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginContainer">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">⚙️</div>
+                <h1 class="login-title">系统管理中心</h1>
+                <p class="login-subtitle">请登录以管理系统配置</p>
+            </div>
+
+            <div id="loginMessage" class="alert"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">用户名</label>
+                    <input type="text" id="username" class="form-input" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">密码</label>
+                    <input type="password" id="password" class="form-input" required autocomplete="current-password">
+                </div>
+                <div class="form-hint" style="background: var(--gray-100); padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid var(--primary);">
+                    <div style="font-weight: 600; margin-bottom: 4px; color: var(--gray-700);">💡 默认管理员账户</div>
+                    <div style="font-size: 13px; color: var(--gray-600);">
+                        用户名：<code style="background: white; padding: 2px 6px; border-radius: 4px; font-family: monospace;">admin</code><br>
+                        密码：<code style="background: white; padding: 2px 6px; border-radius: 4px; font-family: monospace;">admin123</code>
+                    </div>
+                    <div style="font-size: 12px; color: var(--warning); margin-top: 8px;">
+                        ⚠️ 生产环境请务必修改默认密码
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%; justify-content: center;">
+                    登录
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="configContainer">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">⚙️</div>
+                <span class="logo-text">系统管理</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-section="server">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                        </svg>
+                        服务器配置
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="cloudflare">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                        </svg>
+                        Cloudflare
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="llm">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                        验证码智能提取
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/logs.html" target="_blank" style="color: #6b7280;">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        实时日志 🔗
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="topbar">
+                <h1 class="topbar-title">系统配置管理</h1>
+                <div class="topbar-actions">
+                    <button class="btn btn-primary" id="saveBtn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                        </svg>
+                        保存配置
+                    </button>
+                    <button class="btn btn-secondary" id="reloadBtn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        重载配置
+                    </button>
+                    <button class="btn btn-ghost" id="logoutBtn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        登出
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="message" class="alert"></div>
+
+                <div class="section-content active" id="section-server">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                                </svg>
+                                服务器配置
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="port">
+                                        端口 <span class="badge badge-warning">需重启</span>
+                                    </label>
+                                    <input type="number" id="port" class="form-input" placeholder="1234">
+                                    <div class="form-hint">服务器监听端口</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="host">
+                                        主机地址 <span class="badge badge-warning">需重启</span>
+                                    </label>
+                                    <input type="text" id="host" class="form-input" placeholder="0.0.0.0">
+                                    <div class="form-hint">服务器绑定地址</div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="reload" class="checkbox">
+                                    <label class="form-label" for="reload" style="margin: 0;">
+                                        开发模式自动重载 <span class="badge badge-warning">需重启</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 管理员账户配置 -->
+                            <div style="border-top: 1px solid var(--gray-200); margin-top: 24px; padding-top: 24px;">
+                                <h3 style="font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px;">
+                                    管理员账户 <span class="badge badge-warning">需重启</span>
+                                </h3>
+                                <div class="alert alert-warning show">
+                                    ⚠️ 修改管理员账户后需要重新登录
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label class="form-label" for="adminUsername">管理员用户名</label>
+                                        <input type="text" id="adminUsername" class="form-input" placeholder="admin">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" for="adminPassword">管理员密码</label>
+                                        <input type="password" id="adminPassword" class="form-input" placeholder="留空则不修改">
+                                        <div class="form-hint">留空表示不修改密码</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="section-content" id="section-cloudflare">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
+                                </svg>
+                                Cloudflare 配置 <span class="badge badge-info">即时生效</span>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- 按钮组 -->
+                            <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                                <button class="btn btn-primary" id="autoDetectBtn" style="flex: 1; min-width: 150px;">
+                                    ⚡ 自动检测
+                                </button>
+                                <button class="btn btn-secondary" id="wizardBtn" style="flex: 1; min-width: 150px;">
+                                    📖 配置向导
+                                </button>
+                                <button class="btn btn-ghost" id="testConnectionBtn" style="flex: 1; min-width: 150px;">
+                                    🔍 测试连接
+                                </button>
+                                <button class="btn btn-ghost" id="checkDeployBtn" style="flex: 1; min-width: 150px;">
+                                    📊 namespace 部署状态
+                                </button>
+                            </div>
+
+                            <!-- 结果显示区 -->
+                            <div id="cfHelperResult" class="alert" style="display: none;"></div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="cfAccountId">Cloudflare 账户 ID</label>
+                                    <input type="text" id="cfAccountId" class="form-input" placeholder="your-account-id">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="cfKvNamespaceId">KV Namespace ID</label>
+                                    <input type="text" id="cfKvNamespaceId" class="form-input" placeholder="your-namespace-id">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="cfApiToken">Cloudflare API Token</label>
+                                <input type="password" id="cfApiToken" class="form-input" placeholder="your-api-token">
+                                <div class="form-hint">需要 Workers KV 读取权限</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                </svg>
+                                域名管理 <span class="badge badge-info">即时生效</span>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group" style="display: none;">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="enableCustomDomains" class="checkbox" checked>
+                                    <label class="form-label" for="enableCustomDomains" style="margin: 0;">启用自定义域名</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="customDomains">自定义域名列表</label>
+                                <textarea id="customDomains" class="form-input" placeholder="example.com
+your-domain.com
+test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"></textarea>
+                                <div class="form-hint">每行输入一个域名（自动使用 Cloudflare KV）<br>⚠️ 注意：域名必须已添加到您的 Cloudflare 账户中并完成 Email Routing 配置</div>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="enableBuiltinDomains" class="checkbox">
+                                    <label class="form-label" for="enableBuiltinDomains" style="margin: 0;">启用内置域名</label>
+                                </div>
+                                <div class="form-hint" style="margin-left: 28px;">20 个预设的临时邮箱域名（自动使用外部 API）</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-content" id="section-llm">
+                    <div class="card">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                </svg>
+                                验证码智能提取 <span class="badge badge-info">即时生效</span>
+                            </h2>
+                            <a href="/docs#/email/get_codes_api_email__token__codes_get" target="_blank" class="btn btn-ghost" style="padding: 6px 12px; font-size: 13px; text-decoration: none;">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                API 文档
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <!-- LLM 验证码提取默认已启用，无需显示开关 -->
+                            <div class="form-group" style="display: none;">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="useLlmExtraction" class="checkbox" checked>
+                                    <label class="form-label" for="useLlmExtraction" style="margin: 0;">启用 LLM 验证码提取</label>
+                                </div>
+                                <div class="form-hint" style="margin-left: 28px;">使用 AI 模型智能识别验证码</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="openaiApiKey">OpenAI API Key</label>
+                                <input type="password" id="openaiApiKey" class="form-input" placeholder="sk-xxx 或 ak-xxx">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="openaiApiBase">API Base URL</label>
+                                <input type="text" id="openaiApiBase" class="form-input" placeholder="https://api.openai.com/v1">
+                                <div class="form-hint">自定义 API 端点（支持兼容服务）</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="openaiModel">模型名称</label>
+                                <input type="text" id="openaiModel" class="form-input" placeholder="gpt-3.5-turbo">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="defaultCodeExtractionMethod">
+                                    前端默认提取方法
+                                    <span class="badge badge-info">前端默认</span>
+                                </label>
+                                <select id="defaultCodeExtractionMethod" class="form-input" style="cursor: pointer;">
+                                    <option value="llm">🤖 LLM 智能提取（AI 分析）</option>
+                                    <option value="pattern">📌 模式训练提取（基于学习）</option>
+                                </select>
+                                <div class="form-hint">
+                                    设置前端调用 API 时的默认提取方法。LLM 模式更智能但需要 API Key，模式训练基于管理员学习的规则，成本更低。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                模式训练 <span class="badge badge-info">即时生效</span>
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info show">
+                                ℹ️ 粘贴邮件样本，选中验证码文本后点击「学习模式」，系统会自动识别关键词并保存提取规则
+                            </div>
+                            
+                            <!-- 邮件样本输入 -->
+                            <div class="form-group">
+                                <label class="form-label" for="emailSample">邮件样本</label>
+                                <textarea id="emailSample" class="form-input" 
+                                          placeholder="粘贴邮件内容，然后选中验证码进行训练...&#10;&#10;例如：&#10;您的验证码是：123456&#10;有效期为5分钟"
+                                          style="min-height: 200px; font-family: monospace; font-size: 13px;"></textarea>
+                                <div class="form-hint">选中验证码后按钮会激活</div>
+                            </div>
+                            
+                            <!-- 操作按钮 -->
+                            <div class="form-group" style="display: flex; gap: 12px;">
+                                <button id="learnPatternBtn" class="btn btn-primary" disabled>
+                                    📌 学习选中的验证码模式
+                                </button>
+                                <button id="clearSampleBtn" class="btn btn-secondary">
+                                    🗑️ 清空
+                                </button>
+                            </div>
+                            
+                            <!-- 已学习模式列表 -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    已学习的模式
+                                    <button class="btn btn-ghost" style="margin-left: 12px; padding: 4px 12px; font-size: 12px;" onclick="loadPatterns()">
+                                        🔄 重新加载
+                                    </button>
+                                </label>
+                                <div id="patternsList" style="margin-top: 12px;">
+                                    <div style="text-align: center; padding: 20px; color: var(--gray-500);">
+                                        加载中...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 配置向导模态框 -->
+    <div id="wizardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📖 Cloudflare 配置向导</h3>
+                <button class="modal-close" onclick="closeWizardModal()">✕</button>
+            </div>
+            <div class="modal-body" id="wizardSteps">
+                <!-- 动态加载向导步骤 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginContainer = document.getElementById('loginContainer');
+        const configContainer = document.getElementById('configContainer');
+        const loginMessage = document.getElementById('loginMessage');
+        const message = document.getElementById('message');
+
+        // 导航切换
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const section = link.dataset.section;
+                
+                // 跳过外部链接（如实时日志）
+                if (!section) {
+                    return; // 允许默认行为（打开链接）
+                }
+                
+                e.preventDefault();
+
+                // 更新导航状态
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // 显示对应区块
+                document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+                document.getElementById('section-' + section).classList.add('active');
+            });
+        });
+
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = `alert alert-${type} show`;
+            setTimeout(() => {
+                element.className = 'alert';
+            }, 5000);
+        }
+
+        // 检查 JWT
+        async function checkSession() {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                return false;
+            }
+
+            try {
+                const response = await fetch('/admin/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    await loadConfig();
+                    loginContainer.style.display = 'none';
+                    configContainer.style.display = 'block';
+                    return true;
+                } else {
+                    // Token 无效，清除本地存储
+                    localStorage.removeItem('admin_token');
+                    return false;
+                }
+            } catch (error) {
+                // 请求失败，清除本地存储
+                localStorage.removeItem('admin_token');
+                return false;
+            }
+        }
+
+        // 登入
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('loginBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 登录中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // 保存 JWT 到 localStorage
+                    localStorage.setItem('admin_token', data.token);
+                    showMessage(loginMessage, '登录成功！', 'success');
+                    await loadConfig();
+                    loginContainer.style.display = 'none';
+                    configContainer.style.display = 'block';
+                } else {
+                    showMessage(loginMessage, data.detail || '登录失败', 'error');
+                }
+            } catch (error) {
+                showMessage(loginMessage, '网络错误: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 载入配置
+        async function loadConfig() {
+            try {
+                const token = localStorage.getItem('admin_token');
+                if (!token) {
+                    throw new Error('未登录');
+                }
+
+                const response = await fetch('/admin/config/env', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('未授权');
+                }
+
+                const data = await response.json();
+                const config = data.config;
+
+                // Server
+                document.getElementById('port').value = config.server?.port || '';
+                document.getElementById('host').value = config.server?.host || '';
+                document.getElementById('reload').checked = (config.server?.reload === 'true');
+
+                // Domains - 處理自定義域名列表
+                const customDomains = config.domains?.custom_domains || '';
+
+                // 調試輸出：顯示原始數據
+                console.log('原始自定義域名數據:', customDomains, '類型:', typeof customDomains);
+
+                // 智能處理各種可能的域名格式並轉換為每行一個域名的格式
+                let displayValue = '';
+                if (customDomains && customDomains.trim() !== '') {
+                    try {
+                        // 首先嘗試作為 JSON 解析
+                        let parsed;
+
+                        // 處理可能的轉義字符
+                        let cleanInput = customDomains;
+                        if (customDomains.includes('\\"')) {
+                            cleanInput = customDomains.replace(/\\"/g, '"');
+                        }
+
+                        // 嘗試解析為 JSON
+                        parsed = JSON.parse(cleanInput);
+
+                        if (Array.isArray(parsed)) {
+                            // 是數組，轉換為多行格式
+                            displayValue = parsed.filter(domain => domain && domain.trim()).join('\n');
+                        } else if (typeof parsed === 'string') {
+                            // 是字符串，直接使用
+                            displayValue = parsed.trim();
+                        } else {
+                            throw new Error('非預期的數據類型');
+                        }
+                    } catch (jsonError) {
+                        // JSON 解析失败，嘗試其他格式
+                        console.log('JSON 解析失敗，嘗試其他格式:', jsonError);
+
+                        // 移除可能的引號
+                        let cleanValue = customDomains.replace(/^["']|["']$/g, '');
+
+                        // 檢查是否包含逗號（可能是逗號分隔）
+                        if (cleanValue.includes(',')) {
+                            displayValue = cleanValue
+                                .split(',')
+                                .map(domain => domain.trim())
+                                .filter(domain => domain.length > 0)
+                                .join('\n');
+                        } else if (cleanValue.includes('\n')) {
+                            // 已經是多行格式
+                            displayValue = cleanValue;
+                        } else if (cleanValue.trim().length > 0) {
+                            // 單一域名
+                            displayValue = cleanValue.trim();
+                        }
+                        // 如果全部都失敗，displayValue 保持為空字符串
+                    }
+                }
+
+                // 調試輸出：顯示處理後的結果
+                console.log('處理後的域名顯示值:', displayValue);
+
+                document.getElementById('customDomains').value = displayValue;
+
+                document.getElementById('enableCustomDomains').checked = true; // 始終為 true（已隱藏 UI）
+                document.getElementById('enableBuiltinDomains').checked = (config.domains?.enable_builtin_domains === 'true');
+
+                // Cloudflare (KV checkbox removed - always enabled)
+                document.getElementById('cfAccountId').value = config.cloudflare?.cf_account_id || '';
+                document.getElementById('cfKvNamespaceId').value = config.cloudflare?.cf_kv_namespace_id || '';
+                document.getElementById('cfApiToken').value = config.cloudflare?.cf_api_token || '';
+
+                // LLM
+                document.getElementById('useLlmExtraction').checked = (config.llm?.use_llm_extraction === 'true');
+                document.getElementById('openaiApiKey').value = config.llm?.openai_api_key || '';
+                document.getElementById('openaiApiBase').value = config.llm?.openai_api_base || '';
+                document.getElementById('openaiModel').value = config.llm?.openai_model || '';
+                document.getElementById('defaultCodeExtractionMethod').value = config.llm?.default_code_extraction_method || 'llm';
+
+                // Admin
+                document.getElementById('adminUsername').value = config.admin?.admin_username || '';
+
+            } catch (error) {
+                console.error('載入配置時發生錯誤:', error);
+                showMessage(message, '加载配置失败: ' + error.message, 'error');
+
+                // 如果是域名配置問題，設置為空值以避免顯示錯誤數據
+                if (error.message.includes('domain') || error.message.includes('JSON')) {
+                    document.getElementById('customDomains').value = '';
+                }
+            }
+        }
+
+        // 保存配置
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 保存中...';
+            btn.disabled = true;
+
+            try {
+                const configData = {};
+
+                // Server
+                if (document.getElementById('port').value) {
+                    configData.port = parseInt(document.getElementById('port').value);
+                }
+                if (document.getElementById('host').value) {
+                    configData.host = document.getElementById('host').value;
+                }
+                configData.reload = document.getElementById('reload').checked;
+
+                // Domains - 將多行域名轉換為 JSON 數組格式
+                const domainsInput = document.getElementById('customDomains').value.trim();
+                if (domainsInput) {
+                    // 按行分割並過濾空行
+                    const domainsArray = domainsInput
+                        .split('\n')
+                        .map(domain => domain.trim())
+                        .filter(domain => domain.length > 0);
+
+                    // 轉換為 JSON 字符串
+                    configData.custom_domains = JSON.stringify(domainsArray);
+                }
+                configData.enable_custom_domains = true; // 始終啟用自定義域名（已隱藏 UI 並默認選中）
+                configData.enable_builtin_domains = document.getElementById('enableBuiltinDomains').checked;
+
+                // Cloudflare (KV always enabled)
+                configData.use_cloudflare_kv = true;
+                if (document.getElementById('cfAccountId').value) {
+                    configData.cf_account_id = document.getElementById('cfAccountId').value;
+                }
+                if (document.getElementById('cfKvNamespaceId').value) {
+                    configData.cf_kv_namespace_id = document.getElementById('cfKvNamespaceId').value;
+                }
+                if (document.getElementById('cfApiToken').value) {
+                    configData.cf_api_token = document.getElementById('cfApiToken').value;
+                }
+
+                // LLM
+                configData.use_llm_extraction = document.getElementById('useLlmExtraction').checked;
+                if (document.getElementById('openaiApiKey').value) {
+                    configData.openai_api_key = document.getElementById('openaiApiKey').value;
+                }
+                if (document.getElementById('openaiApiBase').value) {
+                    configData.openai_api_base = document.getElementById('openaiApiBase').value;
+                }
+                if (document.getElementById('openaiModel').value) {
+                    configData.openai_model = document.getElementById('openaiModel').value;
+                }
+                if (document.getElementById('defaultCodeExtractionMethod').value) {
+                    configData.default_code_extraction_method = document.getElementById('defaultCodeExtractionMethod').value;
+                }
+
+                // Admin
+                if (document.getElementById('adminUsername').value) {
+                    configData.admin_username = document.getElementById('adminUsername').value;
+                }
+                if (document.getElementById('adminPassword').value) {
+                    configData.admin_password = document.getElementById('adminPassword').value;
+                }
+                // JWT 密钥不允许从管理界面修改，只能通过环境变量配置
+                // if (document.getElementById('adminSecretKey').value) {
+                //     configData.admin_secret_key = document.getElementById('adminSecretKey').value;
+                // }
+
+                const token = localStorage.getItem('admin_token');
+                if (!token) {
+                    showMessage(message, '❌ 请先登录', 'error');
+                    return;
+                }
+
+                const response = await fetch('/admin/config/env', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(configData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage(message, '✅ ' + (data.message || '配置保存成功！'), 'success');
+                } else {
+                    showMessage(message, '❌ ' + (data.detail || '保存失败'), 'error');
+                }
+            } catch (error) {
+                showMessage(message, '❌ 网络错误: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 重载配置
+        document.getElementById('reloadBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('reloadBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 重载中...';
+            btn.disabled = true;
+
+            try {
+                await loadConfig();
+                showMessage(message, '✅ 配置重载成功！', 'success');
+            } catch (error) {
+                showMessage(message, '❌ 重载失败: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 登出
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                const token = localStorage.getItem('admin_token');
+                if (token) {
+                    await fetch('/admin/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                }
+
+                // 清除本地存储的 JWT
+                localStorage.removeItem('admin_token');
+                loginContainer.style.display = 'flex';
+                configContainer.style.display = 'none';
+                loginForm.reset();
+                showMessage(loginMessage, '✅ 已登出', 'success');
+            } catch (error) {
+                // 即使请求失败，也清除本地存储
+                localStorage.removeItem('admin_token');
+                loginContainer.style.display = 'flex';
+                configContainer.style.display = 'none';
+                loginForm.reset();
+                showMessage(loginMessage, '✅ 已登出', 'success');
+            }
+        });
+
+        // 页面加载时检查 session
+        checkSession();
+
+        // ==================== Cloudflare 辅助功能 ====================
+
+        // 配置向导
+        document.getElementById('wizardBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('wizardBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 加载中...';
+            btn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/admin/cloudflare/wizard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showWizardModal(data.steps);
+                } else {
+                    showCfHelperResult('加载向导失败: ' + (data.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showCfHelperResult('网络错误: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 测试连接
+        document.getElementById('testConnectionBtn').addEventListener('click', async () => {
+            const accountId = document.getElementById('cfAccountId').value;
+            const namespaceId = document.getElementById('cfKvNamespaceId').value;
+            const apiToken = document.getElementById('cfApiToken').value;
+
+            if (!accountId || !namespaceId || !apiToken) {
+                showCfHelperResult('请先填写 Cloudflare 配置信息', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('testConnectionBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 测试中...';
+            btn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/admin/cloudflare/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        cf_account_id: accountId,
+                        cf_kv_namespace_id: namespaceId,
+                        cf_api_token: apiToken
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showTestResult(data);
+                } else {
+                    showCfHelperResult('测试失败: ' + (data.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showCfHelperResult('网络错误: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 检查部署状态
+        document.getElementById('checkDeployBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('checkDeployBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 检查中...';
+            btn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/admin/cloudflare/deploy-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.deployed) {
+                        let msg = `${data.message}\n\n`;
+                        if (data.namespace_id) {
+                            msg += `📦 Namespace ID: ${data.namespace_id}\n`;
+                        }
+                        if (data.worker_url) {
+                            msg += `🔗 Worker URL: ${data.worker_url}\n`;
+                        }
+                        if (data.deploy_time) {
+                            msg += `⏰ 部署时间: ${data.deploy_time}\n`;
+                        }
+                        showCfHelperResult(msg, 'success');
+                    } else {
+                        showCfHelperResult(data.message, 'warning');
+                    }
+                } else {
+                    showCfHelperResult('检查失败: ' + (data.detail || '未知错误'), 'error');
+                }
+            } catch (error) {
+                showCfHelperResult('网络错误: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 自动检测
+        document.getElementById('autoDetectBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('autoDetectBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading"></span> 检测中...';
+            btn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/admin/cloudflare/auto-detect', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.detected) {
+                    // 自动填充
+                    if (data.data.cf_account_id) {
+                        document.getElementById('cfAccountId').value = data.data.cf_account_id;
+                    }
+                    if (data.data.cf_kv_namespace_id) {
+                        document.getElementById('cfKvNamespaceId').value = data.data.cf_kv_namespace_id;
+                    }
+
+                    let msg = `✅ ${data.message}\n`;
+                    if (data.data.logged_in_as) {
+                        msg += `登录账户: ${data.data.logged_in_as}\n`;
+                    }
+                    if (data.data.wrangler_version) {
+                        msg += `Wrangler 版本: ${data.data.wrangler_version}\n`;
+                    }
+                    if (data.data.namespace_title) {
+                        msg += `检测到 Namespace: ${data.data.namespace_title}\n`;
+                    }
+                    if (data.warning) {
+                        msg += `⚠️ ${data.warning}\n`;
+                    }
+                    msg += '\n' + data.note;
+
+                    showCfHelperResult(msg, 'success');
+                } else {
+                    // 构建错误消息
+                    let errorMsg = `⚠️ ${data.error || '自动检测失败'}\n\n`;
+                    errorMsg += `💡 ${data.suggestion || '请使用配置向导或手动填写'}\n`;
+
+                    // 如果有可用的 namespace 列表，显示出来
+                    if (data.available_namespaces && data.available_namespaces.length > 0) {
+                        errorMsg += `\n📦 当前可用的 KV Namespaces:\n`;
+                        data.available_namespaces.forEach(name => {
+                            errorMsg += `   • ${name}\n`;
+                        });
+                    }
+
+                    // 如果有额外说明
+                    if (data.note) {
+                        errorMsg += `\n${data.note}`;
+                    }
+
+                    showCfHelperResult(errorMsg, 'warning');
+                }
+            } catch (error) {
+                showCfHelperResult('网络错误: ' + error.message, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ===== 可复用操作函数：供配置页按钮和配置向导调用 =====
+        async function ensureNamespaceAction() {
+            const accountId = document.getElementById('cfAccountId').value;
+            const apiToken = document.getElementById('cfApiToken').value;
+
+            if (!accountId || !apiToken) {
+                showCreateNamespaceModal('请先填写 Cloudflare 账户 ID 与 API Token', 'warning');
+                return;
+            }
+
+            // 显示载入状态
+            showCreateNamespaceModal('🔄 正在创建 KV Namespace...', 'info');
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const resp = await fetch('/admin/cloudflare/kv/ensure-namespace', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title: 'EMAIL_STORAGE', cf_account_id: accountId, cf_api_token: apiToken })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    document.getElementById('cfKvNamespaceId').value = data.id;
+                    const msg = data.created
+                        ? `✅ 已创建 Namespace EMAIL_STORAGE\n\nNamespace ID: ${data.id}\n\n此 ID 已自動填入下方欄位，您可以繼續配置其他選項。`
+                        : `✅ 已选择现有 Namespace EMAIL_STORAGE\n\nNamespace ID: ${data.id}\n\n此 ID 已自動填入下方欄位，您可以繼續配置其他選項。`;
+                    showCreateNamespaceModal(msg, 'success');
+                } else {
+                    showCreateNamespaceModal('❌ 操作失败\n\n' + (data.detail || '未知错误'), 'error');
+                }
+            } catch (e) {
+                showCreateNamespaceModal('❌ 网络错误\n\n' + e.message, 'error');
+            }
+        }
+
+        // 创建独立的 KV Namespace 结果消息框
+        function showCreateNamespaceModal(message, type) {
+            // 移除现有的消息框（如果存在）
+            const existingModal = document.getElementById('createNamespaceModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // 创建新的消息框
+            const modal = document.createElement('div');
+            modal.id = 'createNamespaceModal';
+            modal.className = 'modal show';
+            modal.style.zIndex = '1050'; // 确保在其他模态框之上
+
+            const typeColors = {
+                success: { bg: '#D1FAE5', border: '#10B981', text: '#065F46', icon: '✅' },
+                error: { bg: '#FEE2E2', border: '#EF4444', text: '#991B1B', icon: '❌' },
+                warning: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E', icon: '⚠️' },
+                info: { bg: 'var(--primary-light)', border: 'var(--primary)', text: 'var(--primary-dark)', icon: 'ℹ️' }
+            };
+
+            const colors = typeColors[type] || typeColors.info;
+
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px; margin-top: 100px;">
+                    <div class="modal-header" style="background: ${colors.bg}; border-color: ${colors.border};">
+                        <h3 class="modal-title" style="color: ${colors.text}; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">${colors.icon}</span>
+                            KV Namespace 操作結果
+                        </h3>
+                        <button class="modal-close" onclick="closeCreateNamespaceModal()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="
+                            background: ${colors.bg};
+                            border: 2px solid ${colors.border};
+                            color: ${colors.text};
+                            padding: 20px;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            line-height: 1.6;
+                            white-space: pre-line;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        ">
+                            ${message}
+                        </div>
+                        ${type === 'success' || type === 'error' || type === 'warning' ? `
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn btn-primary" onclick="closeCreateNamespaceModal()">确定</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 點擊背景關閉
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeCreateNamespaceModal();
+                }
+            });
+
+            // ESC 鍵關閉
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    closeCreateNamespaceModal();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+        }
+
+        // 關閉 KV Namespace 結果消息框
+        function closeCreateNamespaceModal() {
+            const modal = document.getElementById('createNamespaceModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 全局变量存储当前片段内容
+        let currentSnippetContent = '';
+
+        // 创建 Wrangler 片段消息框
+        function showWranglerSnippetModal(message, type, snippet = null) {
+            // 移除现有的消息框（如果存在）
+            const existingModal = document.getElementById('wranglerSnippetModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // 存储片段内容到全局变量
+            currentSnippetContent = snippet || '';
+
+            // 创建新的消息框
+            const modal = document.createElement('div');
+            modal.id = 'wranglerSnippetModal';
+            modal.className = 'modal show';
+            modal.style.zIndex = '1050';
+
+            const typeColors = {
+                success: { bg: '#D1FAE5', border: '#10B981', text: '#065F46', icon: '✅' },
+                error: { bg: '#FEE2E2', border: '#EF4444', text: '#991B1B', icon: '❌' },
+                warning: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E', icon: '⚠️' },
+                info: { bg: 'var(--primary-light)', border: 'var(--primary)', text: 'var(--primary-dark)', icon: 'ℹ️' }
+            };
+
+            const colors = typeColors[type] || typeColors.info;
+
+            // 生成代码片段显示区域
+            const snippetHtml = snippet ? `
+                <div style="margin-top: 16px;">
+                    <div id="snippetCodeDisplay" style="
+                        background: #1f2937;
+                        color: #10b981;
+                        padding: 16px;
+                        border-radius: 8px;
+                        font-family: 'Monaco', 'Courier New', monospace;
+                        font-size: 13px;
+                        white-space: pre-line;
+                        border: 2px solid #374151;
+                        position: relative;
+                        user-select: text;
+                        cursor: text;
+                    ">${snippet}</div>
+                    <div style="margin-top: 12px; text-align: center;">
+                        <button class="btn btn-secondary" onclick="copyCurrentSnippet()">
+                            📋 复制配置片段
+                        </button>
+                        <button class="btn btn-secondary" onclick="selectSnippetText()" style="margin-left: 8px;">
+                            🎯 选取文本
+                        </button>
+                    </div>
+                </div>
+            ` : '';
+
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px; margin-top: 50px;">
+                    <div class="modal-header" style="background: ${colors.bg}; border-color: ${colors.border};">
+                        <h3 class="modal-title" style="color: ${colors.text}; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">${colors.icon}</span>
+                            Wrangler 配置片段
+                        </h3>
+                        <button class="modal-close" onclick="closeWranglerSnippetModal()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="
+                            background: ${colors.bg};
+                            border: 2px solid ${colors.border};
+                            color: ${colors.text};
+                            padding: 20px;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            line-height: 1.6;
+                            white-space: pre-line;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        ">
+                            ${message}
+                        </div>
+                        ${snippetHtml}
+                        ${type === 'success' || type === 'error' || type === 'warning' ? `
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn btn-primary" onclick="closeWranglerSnippetModal()">确定</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 點擊背景關閉
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeWranglerSnippetModal();
+                }
+            });
+
+            // ESC 鍵關閉
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    closeWranglerSnippetModal();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+        }
+
+        // 關閉 Wrangler 片段消息框
+        function closeWranglerSnippetModal() {
+            const modal = document.getElementById('wranglerSnippetModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 复制当前片段到剪贴板
+        function copyCurrentSnippet() {
+            if (!currentSnippetContent) {
+                alert('没有可复制的配置片段');
+                return;
+            }
+
+            // 使用现代 Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentSnippetContent).then(() => {
+                    showCopySuccess();
+                }).catch(() => {
+                    // Fallback to older method
+                    fallbackCopySnippet();
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopySnippet();
+            }
+        }
+
+        // 显示复制成功提示
+        function showCopySuccess() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            const originalBg = btn.style.background;
+            const originalColor = btn.style.color;
+
+            btn.innerHTML = '✅ 已复制';
+            btn.style.background = '#10B981';
+            btn.style.color = 'white';
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = originalBg;
+                btn.style.color = originalColor;
+            }, 2000);
+        }
+
+        // 旧版浏览器的复制方法
+        function fallbackCopySnippet() {
+            // 创建临时文本区域
+            const textArea = document.createElement('textarea');
+            textArea.value = currentSnippetContent;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+
+            try {
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess();
+                } else {
+                    throw new Error('execCommand failed');
+                }
+            } catch (err) {
+                // 最终的错误处理
+                alert('复制失败，请手动选取并复制代码片段\n\n您可以点击「🎯 选取文本」按钮来选取代码');
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // 选取片段文本
+        function selectSnippetText() {
+            const codeDisplay = document.getElementById('snippetCodeDisplay');
+            if (!codeDisplay) {
+                alert('找不到代码片段');
+                return;
+            }
+
+            // 选取文本
+            if (window.getSelection && document.createRange) {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(codeDisplay);
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                // 提示用户
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ 已选取';
+                btn.style.background = '#3B82F6';
+                btn.style.color = 'white';
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+
+                // 提示用户可以复制
+                setTimeout(() => {
+                    alert('代码已选取，请按 Ctrl+C (Windows) 或 Cmd+C (Mac) 复制');
+                }, 100);
+            } else {
+                alert('您的浏览器不支持自动选取，请手动选取代码片段');
+            }
+        }
+
+        // 创建写入 Wrangler 文件消息框
+        function showWriteWranglerModal(message, type) {
+            // 移除现有的消息框（如果存在）
+            const existingModal = document.getElementById('writeWranglerModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // 创建新的消息框
+            const modal = document.createElement('div');
+            modal.id = 'writeWranglerModal';
+            modal.className = 'modal show';
+            modal.style.zIndex = '1050';
+
+            const typeColors = {
+                success: { bg: '#D1FAE5', border: '#10B981', text: '#065F46', icon: '✅' },
+                error: { bg: '#FEE2E2', border: '#EF4444', text: '#991B1B', icon: '❌' },
+                warning: { bg: '#FEF3C7', border: '#F59E0B', text: '#92400E', icon: '⚠️' },
+                info: { bg: 'var(--primary-light)', border: 'var(--primary)', text: 'var(--primary-dark)', icon: 'ℹ️' }
+            };
+
+            const colors = typeColors[type] || typeColors.info;
+
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px; margin-top: 100px;">
+                    <div class="modal-header" style="background: ${colors.bg}; border-color: ${colors.border};">
+                        <h3 class="modal-title" style="color: ${colors.text}; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">${colors.icon}</span>
+                            寫入 wrangler.toml
+                        </h3>
+                        <button class="modal-close" onclick="closeWriteWranglerModal()">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="
+                            background: ${colors.bg};
+                            border: 2px solid ${colors.border};
+                            color: ${colors.text};
+                            padding: 20px;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            line-height: 1.6;
+                            white-space: pre-line;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        ">
+                            ${message}
+                        </div>
+                        ${type === 'success' || type === 'error' || type === 'warning' ? `
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button class="btn btn-primary" onclick="closeWriteWranglerModal()">确定</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 點擊背景關閉
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeWriteWranglerModal();
+                }
+            });
+
+            // ESC 鍵關閉
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    closeWriteWranglerModal();
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+        }
+
+        // 關閉寫入 Wrangler 消息框
+        function closeWriteWranglerModal() {
+            const modal = document.getElementById('writeWranglerModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function wranglerSnippetAction() {
+            const namespaceId = document.getElementById('cfKvNamespaceId').value;
+            if (!namespaceId) {
+                showWranglerSnippetModal('⚠️ 请先填写或创建 KV Namespace ID\n\n请确保您已完成步骤 2 并填入了有效的 Namespace ID。', 'warning');
+                return;
+            }
+
+            // 顯示載入狀態
+            showWranglerSnippetModal('🔄 正在生成 Wrangler 配置片段...', 'info');
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const resp = await fetch(`/admin/cloudflare/wrangler-snippet?binding=EMAIL_STORAGE&namespace_id=${encodeURIComponent(namespaceId)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    const message = `✅ Wrangler 配置片段已生成\n\n请将以下片段复制到 workers/wrangler.toml 文件中：\n\n${data.snippet}\n使用方法：\n1. 复制上面的配置片段\n2. 打开 workers/wrangler.toml 文件\n3. 将片段粘贴到文件中\n4. 保存文件\n5. 在 workers 目录执行: wrangler deploy`;
+                    showWranglerSnippetModal(message, 'success', data.snippet);
+                } else {
+                    showWranglerSnippetModal('❌ 生成失败\n\n' + (data.detail || '未知错误'), 'error');
+                }
+            } catch (e) {
+                showWranglerSnippetModal('❌ 网络错误\n\n' + e.message, 'error');
+            }
+        }
+
+        async function writeWranglerAction() {
+            const namespaceId = document.getElementById('cfKvNamespaceId').value;
+            if (!namespaceId) {
+                showWriteWranglerModal('⚠️ 请先填写或创建 KV Namespace ID\n\n请确保您已完成步骤 2 并填入了有效的 Namespace ID。', 'warning');
+                return;
+            }
+
+            // 获取文件路径
+            const filePath = prompt('wrangler.toml 路径', 'workers/wrangler.toml');
+            if (!filePath) return;
+
+            // 显示载入状态
+            showWriteWranglerModal('🔄 正在写入 wrangler.toml 文件...\n\n正在将 KV Namespace 配置写入到指定的文件中...', 'info');
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const resp = await fetch('/admin/cloudflare/write-wrangler', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_path: filePath, binding: 'EMAIL_STORAGE', namespace_id: namespaceId, confirm: true })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.success) {
+                    const message = `✅ wrangler.toml 已成功更新\n\n文件路径: ${data.file}\n\n接下来的步骤:\n1. 确认 workers/wrangler.toml 文件已正确更新\n2. 在 workers 目录执行: wrangler deploy\n3. 完成 Worker 部署到 Cloudflare`;
+                    showWriteWranglerModal(message, 'success');
+                } else {
+                    const message = `❌ 写入失败\n\n错误详情: ${data.detail || '未知错误'}\n\n💡 建议解决方案:\n• 检查文件路径是否正确\n• 确保有写入权限\n• 或使用「🧩 Wrangler 片段」功能手动复制配置`;
+                    showWriteWranglerModal(message, 'error');
+                }
+            } catch (e) {
+                showWriteWranglerModal('❌ 网络错误\n\n' + e.message, 'error');
+            }
+        }
+
+        // 已移除 Cloudflare 面板内的「创建/片段/写入」按钮（保留在配置向导内）
+
+        // 显示配置向导模态框
+        function showWizardModal(steps) {
+            const wizardSteps = document.getElementById('wizardSteps');
+            wizardSteps.innerHTML = '';
+
+            // 向导内消息框（用于显示 Wrangler 片段等）
+            const wizardMsgBox = document.createElement('div');
+            wizardMsgBox.id = 'wizardMsgBox';
+            wizardMsgBox.className = 'alert';
+            wizardMsgBox.style.display = 'none';
+            wizardSteps.appendChild(wizardMsgBox);
+
+            steps.forEach(step => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'wizard-step';
+                
+                // 构建命令展示区域（如果存在命令）
+                let commandHtml = '';
+                if (step.command) {
+                    commandHtml = `
+                        <div style="background: var(--gray-900); color: #00ff00; padding: 12px; border-radius: 6px; margin: 12px 0; font-family: 'Monaco', 'Courier New', monospace; font-size: 13px; position: relative;">
+                            <code style="display: block; white-space: pre-wrap;">${step.command}</code>
+                        </div>
+                        <button class="btn btn-ghost" onclick="copyCommand('${step.command.replace(/'/g, "\\'")}'); event.stopPropagation();" style="margin-bottom: 8px;">
+                            📋 复制命令
+                        </button>
+                    `;
+                }
+                
+                // 构建按钮区域
+                let actionsHtml = '<div class="wizard-step-actions">';
+
+                // 添加 Cloudflare 服务链接按钮（如果有 URL）
+                if (step.url) {
+                    // 根据步骤 ID 自定义按钮文本
+                    let buttonText = '🔗 打开链接';
+                    if (String(step.id) === '1') {
+                        buttonText = '🔗 打开 Cloudflare Dashboard';
+                    } else if (String(step.id) === '2') {
+                        buttonText = '🔗 打开 Workers KV 管理';
+                    } else if (String(step.id) === '3') {
+                        buttonText = '🔗 打开 API Token 管理';
+                    } else if (String(step.id) === '4') {
+                        buttonText = '🔗 前往 Node.js 官网';
+                    } else if (String(step.id) === '5') {
+                        buttonText = '🔗 查看项目仓库';
+                    } else if (String(step.id) === '6') {
+                        buttonText = '🔗 打开 Email Routing 配置';
+                    }
+
+                    actionsHtml += `
+                        <a href="${step.url}" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                            ${buttonText}
+                        </a>
+                    `;
+                }
+
+                if (step.field_id) {
+                    actionsHtml += `
+                        <button class="btn btn-secondary" onclick="focusField('${step.field_id}')">
+                            📝 前往填写
+                        </button>
+                    `;
+                }
+                // 将「创建 KV Namespace」移动到步骤 2
+                if (String(step.id) === '2') {
+                    actionsHtml += `
+                        <button class="btn btn-primary" onclick="ensureNamespaceAction()">
+                            🛠️ 创建 KV Namespace
+                        </button>
+                    `;
+                }
+                // 将手动配置选项添加到步骤 5
+                if (String(step.id) === '5') {
+                    actionsHtml += `
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200);">
+                            <div style="font-size: 14px; color: var(--gray-700); margin-bottom: 12px; font-weight: 600;">
+                                🔧 手动配置选项 (如果自动部署失败):
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="wranglerSnippetAction()" style="font-size: 13px;">
+                                    🧩 Wrangler 片段
+                                </button>
+                                <button class="btn btn-ghost" onclick="writeWranglerAction()" style="font-size: 13px;">
+                                    ✍️ 写入 wrangler.toml
+                                </button>
+                            </div>
+                            <div style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">
+                                💡 优先使用上方的自动部署脚本。手动配置仅作为备选方案。
+                            </div>
+                        </div>
+                    `;
+                }
+                actionsHtml += '</div>';
+                
+                stepDiv.innerHTML = `
+                    <div class="wizard-step-header">
+                        <div class="wizard-step-icon">${step.icon}</div>
+                        <div class="wizard-step-title">步骤 ${step.id}: ${step.title}</div>
+                    </div>
+                    <div class="wizard-step-desc">${step.description}</div>
+                    <div class="wizard-step-hint">💡 ${step.hint}</div>
+                    ${commandHtml}
+                    ${actionsHtml}
+                `;
+                wizardSteps.appendChild(stepDiv);
+            });
+
+
+            document.getElementById('wizardModal').classList.add('show');
+        }
+
+        // 在向导内显示消息
+        function showWizardMessage(message, type) {
+            const box = document.getElementById('wizardMsgBox');
+            if (!box) {
+                showCfHelperResult(message, type || 'info');
+                return;
+            }
+            box.innerHTML = message.replace(/\n/g, '<br>');
+            box.className = `alert alert-${type || 'info'} show`;
+            box.style.display = 'block';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 复制命令到剪贴板
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                showCfHelperResult('✅ 命令已复制到剪贴板', 'success');
+                setTimeout(() => {
+                    document.getElementById('cfHelperResult').style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                showCfHelperResult('❌ 复制失败: ' + err.message, 'error');
+            });
+        }
+
+        // 关闭配置向导
+        function closeWizardModal() {
+            document.getElementById('wizardModal').classList.remove('show');
+        }
+
+        // 聚焦到指定字段
+        function focusField(fieldId) {
+            closeWizardModal();
+            // 切换到 Cloudflare 配置页面
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector('.nav-link[data-section="cloudflare"]').classList.add('active');
+            document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-cloudflare').classList.add('active');
+
+            // 聚焦并高亮
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.focus();
+                field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                field.style.borderColor = 'var(--primary)';
+                field.style.boxShadow = '0 0 0 3px var(--primary-light)';
+                setTimeout(() => {
+                    field.style.borderColor = '';
+                    field.style.boxShadow = '';
+                }, 2000);
+            }
+        }
+
+        // 显示测试结果
+        function showTestResult(data) {
+            const resultDiv = document.getElementById('cfHelperResult');
+            let html = '';
+
+            if (data.checks && data.checks.length > 0) {
+                data.checks.forEach(check => {
+                    const isPassed = check.status === 'passed';
+                    html += `
+                        <div class="check-item ${isPassed ? 'passed' : 'failed'}">
+                            <div class="check-icon">${check.icon}</div>
+                            <div style="flex: 1;">
+                                <div class="check-name">${check.name}</div>
+                                <div class="check-message">${check.message}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `<div style="margin-top: 12px; font-weight: 600;">${data.message}</div>`;
+
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'flex';
+            resultDiv.style.flexDirection = 'column';
+            resultDiv.className = `alert alert-${data.overall_status === 'success' ? 'success' : 'error'} show`;
+
+            // 自动滚动到结果区域
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 显示辅助功能结果
+        function showCfHelperResult(message, type) {
+            const resultDiv = document.getElementById('cfHelperResult');
+            resultDiv.innerHTML = message.replace(/\n/g, '<br>');
+            resultDiv.className = `alert alert-${type} show`;
+            setTimeout(() => {
+                resultDiv.className = 'alert';
+            }, 10000);
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('wizardModal').addEventListener('click', (e) => {
+            if (e.target.id === 'wizardModal') {
+                closeWizardModal();
+            }
+        });
+
+        // 监听ESC键关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                const wizardModal = document.getElementById('wizardModal');
+                if (wizardModal && wizardModal.classList.contains('show')) {
+                    closeWizardModal();
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }
+        });
+
+        // ==================== Pattern Training Functions ====================
+
+        // 监听文本选中事件
+        document.getElementById('emailSample').addEventListener('mouseup', function() {
+            const textarea = this;
+            const selectedText = textarea.value.substring(
+                textarea.selectionStart,
+                textarea.selectionEnd
+            ).trim();
+
+            const learnBtn = document.getElementById('learnPatternBtn');
+
+            // 判断是否可能是验证码 (4-10位字母数字)
+            if (selectedText.length >= 4 && selectedText.length <= 10) {
+                if (/^[A-Z0-9]+$/i.test(selectedText)) {
+                    learnBtn.disabled = false;
+                    learnBtn.innerHTML = `📌 学习「${selectedText}」`;
+                    learnBtn.dataset.selectedText = selectedText;
+                    learnBtn.dataset.selectionStart = textarea.selectionStart;
+                } else {
+                    learnBtn.disabled = true;
+                    learnBtn.innerHTML = '📌 学习选中的验证码模式';
+                }
+            } else {
+                learnBtn.disabled = true;
+                learnBtn.innerHTML = '📌 学习选中的验证码模式';
+            }
+        });
+
+        // 学习模式按钮
+        document.getElementById('learnPatternBtn').addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+            const selectedText = btn.dataset.selectedText;
+            const selectionStart = parseInt(btn.dataset.selectionStart);
+            const emailContent = document.getElementById('emailSample').value;
+
+            if (!selectedText || !emailContent) {
+                showMessage(message, '❌ 请先粘贴邮件并选中验证码', 'error');
+                return;
+            }
+
+            btn.innerHTML = '<span class="loading"></span> 学习中...';
+            btn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/api/patterns/learn', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email_content: emailContent,
+                        highlighted_code: selectedText,
+                        highlight_position: selectionStart
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const keywords = data.preview.keywords_before.join('、');
+                    showMessage(message, `✅ 模式学习成功！关键词：${keywords}`, 'success');
+                    loadPatterns(); // 重新加载模式列表
+                } else {
+                    showMessage(message, `❌ ${data.message || '学习失败'}`, 'error');
+                }
+            } catch (error) {
+                showMessage(message, `❌ 网络错误: ${error.message}`, 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 清空按钮
+        document.getElementById('clearSampleBtn').addEventListener('click', function() {
+            document.getElementById('emailSample').value = '';
+            const learnBtn = document.getElementById('learnPatternBtn');
+            learnBtn.disabled = true;
+            learnBtn.innerHTML = '📌 学习选中的验证码模式';
+        });
+
+        // 加载已学习模式列表
+        async function loadPatterns() {
+            const patternsList = document.getElementById('patternsList');
+
+            patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gray-500);">加载中...</div>';
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch('/api/patterns', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    if (data.patterns.length === 0) {
+                        patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gray-500);">暂无已学习模式，请先训练</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.patterns.forEach(pattern => {
+                        const successRate = pattern.usage_count > 0 
+                            ? Math.round(pattern.success_rate * 100) 
+                            : 0;
+                        
+                        // 截取邮件内容预览（最多150个字符）
+                        const emailPreview = pattern.email_content.length > 150 
+                            ? pattern.email_content.substring(0, 150) + '...' 
+                            : pattern.email_content;
+                        
+                        html += `
+                            <div class="pattern-item" style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; margin-bottom: 8px;">
+                                            <span class="badge badge-info">${pattern.code_type}</span>
+                                            <span style="margin-left: 8px;">关键词：「${pattern.keywords_before.join('、')}」→ ${pattern.code_length}位${pattern.code_type === 'numeric' ? '数字' : '字母数字'}</span>
+                                        </div>
+                                        
+                                        <!-- 邮件内容预览 -->
+                                        <div style="background: var(--gray-50); border-radius: 6px; padding: 12px; margin-bottom: 8px;">
+                                            <div style="font-size: 11px; color: var(--gray-500); margin-bottom: 4px; font-weight: 600;">邮件内容：</div>
+                                            <div style="font-size: 12px; color: var(--gray-700); line-height: 1.5; font-family: monospace; white-space: pre-wrap;">${emailPreview}</div>
+                                        </div>
+                                        
+                                        <!-- 高亮验证码 -->
+                                        <div style="font-size: 13px; color: var(--gray-700); margin-top: 8px;">
+                                            <span style="color: var(--gray-500);">高亮验证码：</span>
+                                            <span style="background: #FEF3C7; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-family: monospace;">${pattern.example_code}</span>
+                                        </div>
+                                    </div>
+                                    <div style="text-align: right; margin-left: 16px;">
+                                        <div style="font-size: 12px; color: var(--gray-600); margin-bottom: 4px;">
+                                            使用 ${pattern.usage_count} 次
+                                        </div>
+                                        ${pattern.usage_count > 0 ? `
+                                        <div style="font-size: 12px; color: ${successRate >= 80 ? 'var(--success)' : 'var(--warning)'};">
+                                            成功率 ${successRate}%
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px; border-top: 1px solid var(--gray-200); padding-top: 12px;">
+                                    <button class="btn btn-ghost" style="padding: 4px 12px; font-size: 12px;" onclick="deletePattern('${pattern.id}')">
+                                        🗑️ 删除
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    patternsList.innerHTML = html;
+                } else {
+                    patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">加载失败</div>';
+                }
+            } catch (error) {
+                patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">网络错误</div>';
+            }
+        }
+
+        // 删除模式
+        async function deletePattern(patternId) {
+            if (!confirm('确定要删除这个模式吗？')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch(`/api/patterns/${patternId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage(message, '✅ 模式已删除', 'success');
+                    loadPatterns();
+                } else {
+                    showMessage(message, `❌ 删除失败: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage(message, `❌ 网络错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动加载模式列表
+        window.addEventListener('load', function() {
+            // 延迟加载，等待登录完成
+            setTimeout(() => {
+                if (localStorage.getItem('admin_token')) {
+                    loadPatterns();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+                                <div class="form-hint" style="margin-left: 28px;">使用 Cloudflare Workers 

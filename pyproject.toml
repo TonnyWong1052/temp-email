@@ -1,0 +1,28 @@
+[project]
+name = "temp-email-service"
+version = "1.0.0"
+description = "Temporary Email Service with Verification Code Extraction API"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.3",
+    "httpx>=0.26.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.23.3",
+    "black>=23.12.1",
+    "ruff>=0.1.9",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "N", "W"]

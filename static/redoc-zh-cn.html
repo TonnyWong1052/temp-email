@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Temporary Email Service - ReDoc 文档</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <redoc spec-url='/openapi.json' expand-responses="200,201"></redoc>
+    <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.5/bundles/redoc.standalone.js"> </script>
+    <script>
+      // 设置 ReDoc 为简体中文
+      window.addEventListener('DOMContentLoaded', (event) => {
+        // ReDoc 的语言设置
+        const redocElement = document.querySelector('redoc');
+        if (redocElement) {
+          // 设置语言属性
+          redocElement.setAttribute('lang', 'zh-cn');
+          
+          // 监听 ReDoc 初始化完成事件
+          setTimeout(() => {
+            // 尝试修改界面文本为中文
+            const elements = document.querySelectorAll('*');
+            elements.forEach(el => {
+              if (el.textContent === 'Try it out') {
+                el.textContent = '试试看';
+              } else if (el.textContent === 'Clear') {
+                el.textContent = '清除';
+              } else if (el.textContent === 'Download') {
+                el.textContent = '下载';
+              } else if (el.textContent === 'Servers') {
+                el.textContent = '服务器';
+              } else if (el.textContent === 'Authorize') {
+                el.textContent = '授权';
+              } else if (el.textContent === 'No security definition selected.') {
+                el.textContent = '未选择安全定义。';
+              } else if (el.textContent === 'Request') {
+                el.textContent = '请求';
+              } else if (el.textContent === 'Response') {
+                el.textContent = '响应';
+              } else if (el.textContent === 'Headers') {
+                el.textContent = '请求头';
+              } else if (el.textContent === 'Body') {
+                el.textContent = '请求体';
+              } else if (el.textContent === 'Parameters') {
+                el.textContent = '参数';
+              } else if (el.textContent === 'Description') {
+                el.textContent = '描述';
+              } else if (el.textContent === 'Schema') {
+                el.textContent = '模式';
+              } else if (el.textContent === 'Examples') {
+                el.textContent = '示例';
+              }
+            });
+          }, 2000);
+        }
+      });
+    </script>
+  </body>
+</html>

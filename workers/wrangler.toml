@@ -1,0 +1,42 @@
+# Cloudflare Workers 配置文件
+# 用於部署 Email Worker
+
+name = "temp-email-worker"
+main = "email-handler.js"
+compatibility_date = "2024-01-01"
+
+# Workers KV 綁定
+# 需要先在 Cloudflare Dashboard 創建 KV namespace
+# 然後將 namespace ID 填入下方
+[[kv_namespaces]]
+binding = "EMAIL_STORAGE"
+# Replace with your real KV namespace ID (get from: wrangler kv:namespace create EMAIL_STORAGE)
+id = "YOUR_KV_NAMESPACE_ID"
+# preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"  # 可選：用於預覽環境
+
+# Email Routing 配置
+# 此 Worker 需要通過 Email Routing 觸發
+# 在 Cloudflare Dashboard 的 Email Routing 頁面配置路由規則
+
+# 部署說明：
+# 1. 安裝 Wrangler CLI: npm install -g wrangler
+# 2. 登入 Cloudflare: wrangler login
+# 3. 創建 KV namespace: wrangler kv:namespace create EMAIL_STORAGE
+# 4. 複製返回的 namespace ID 並替換上方的 YOUR_KV_NAMESPACE_ID
+# 5. 部署 Worker: wrangler deploy
+# 6. 在 Cloudflare Email Routing 中配置 Catch-All 規則：
+#    • 在 Cloudflare Dashboard 選擇您的域名
+#    • 進入 Email → Email Routing
+#    • 點擊「啟用電子郵件路由」(Enable Email Routing)
+#    • 啟用後，點擊「路由規則」(Routing rules) 選項卡
+#    • 找到 Catch-All 規則，點擊「編輯」(Edit)
+#    • 在「操作」下拉菜單中選擇「發送到 Worker」
+#    • 選擇 Worker: temp-email-worker
+#    • 點擊保存
+
+# 環境變量（可選）
+# [vars]
+# ENVIRONMENT = "production"
+
+# 限制配置
+# limits = { cpu_ms = 50 }

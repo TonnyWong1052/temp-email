@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Temporary Email Service - API 文档</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" >
+    <style>
+      html
+      {
+        box-sizing: border-box;
+        overflow: -moz-scrollbars-vertical;
+        overflow-y: scroll;
+      }
+      *, *:before, *:after
+      {
+        box-sizing: inherit;
+      }
+      body
+      {
+        margin:0;
+        background: #fafafa;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"> </script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"> </script>
+    <script>
+      window.onload = function() {
+        const ui = SwaggerUIBundle({
+          url: '/openapi.json',
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [
+            SwaggerUIBundle.presets.apis,
+            SwaggerUIStandalonePreset
+          ],
+          plugins: [
+            SwaggerUIBundle.plugins.DownloadUrl
+          ],
+          layout: "StandaloneLayout",
+          defaultModelsExpandDepth: 1,
+          defaultModelExpandDepth: 1,
+          displayRequestDuration: true,
+          docExpansion: "list",
+          operationsSorter: "alpha",
+          filter: true,
+          tryItOutEnabled: true,
+          supportedSubmitMethods: ["get", "post", "put", "delete", "patch"],
+          persistAuthorization: false,
+          displayOperationId: false,
+          showExtensions: true,
+          showCommonExtensions: true,
+          // 设置语言为简体中文
+          lang: "zh-cn",
+          // 自定义配置以支持中文
+          onComplete: function() {
+            // 尝试设置语言
+            if (window.SwaggerUIStandalonePreset) {
+              console.log("Swagger UI loaded with zh-cn language support");
+            }
+          }
+        });
+
+        // 尝试手动设置语言
+        setTimeout(function() {
+          // 查找语言选择器并设置为中文
+          const langSelect = document.querySelector('.select-label[title="language"]');
+          if (langSelect) {
+            const options = langSelect.parentElement.querySelectorAll('option');
+            for (let i = 0; i < options.length; i++) {
+              if (options[i].value === 'zh-cn' || options[i].textContent.includes('中文')) {
+                options[i].selected = true;
+                break;
+              }
+            }
+          }
+        }, 2000);
+      }
+    </script>
+  </body>
+</html>

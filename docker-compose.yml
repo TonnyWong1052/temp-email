@@ -1,0 +1,48 @@
+# Temporary Email Service Docker Compose Configuration
+# GitHub: https://github.com/TonnyWong1052/temp-email
+version: '3.8'
+
+services:
+  temp-email:
+    build: .
+    ports:
+      - "1234:1234"
+    environment:
+      # 服务器配置
+      - PORT=1234
+      - HOST=0.0.0.0
+      - RELOAD=false
+
+      # Cloudflare Workers KV 配置
+      # ⚠️ 请填写你的 Cloudflare 凭据
+      - USE_CLOUDFLARE_KV=false
+      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-}
+      - CF_KV_NAMESPACE_ID=${CF_KV_NAMESPACE_ID:-}
+      - CF_API_TOKEN=${CF_API_TOKEN:-}
+      - CF_KV_DOMAINS=${CF_KV_DOMAINS:-}
+
+      # 域名配置
+      - ENABLE_CUSTOM_DOMAINS=${ENABLE_CUSTOM_DOMAINS:-false}
+      - CUSTOM_DOMAINS=${CUSTOM_DOMAINS:-[]}
+      - ENABLE_BUILTIN_DOMAINS=${ENABLE_BUILTIN_DOMAINS:-true}
+
+      # LLM 验证码提取
+      - USE_LLM_EXTRACTION=${USE_LLM_EXTRACTION:-true}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-https://api.longcat.chat/openai/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-LongCat-Flash-Chat}
+
+      # 管理员认证
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY:-your-secret-key-here-change-in-production}
+
+      # CORS 配置
+      - CORS_ORIGINS=${CORS_ORIGINS:-["*"]}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:1234/api/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
