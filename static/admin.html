@@ -1570,6 +1570,10 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                     let errorMsg = `⚠️ ${data.error || '自动检测失败'}\n\n`;
                     errorMsg += `💡 ${data.suggestion || '请使用配置向导或手动填写'}\n`;
 
+                    // 添加配置向导引导提示
+                    errorMsg += `\n✨ 推荐方案:\n`;
+                    errorMsg += `   点击 📖 配置向导 按钮，获取详细的配置步骤指引\n`;
+
                     // 如果有可用的 namespace 列表，显示出来
                     if (data.available_namespaces && data.available_namespaces.length > 0) {
                         errorMsg += `\n📦 当前可用的 KV Namespaces:\n`;
@@ -1586,17 +1590,17 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                     showCfHelperResult(errorMsg, 'warning');
                 }
             } catch (error) {
-                // 構建友好的錯誤提示
-                let errorMsg = `❌ 自動檢測失敗\n\n`;
-                errorMsg += `錯誤原因: ${error.message}\n\n`;
-                errorMsg += `💡 您可以選擇以下方式繼續配置:\n\n`;
-                errorMsg += `1️⃣ 使用 📖 配置向導 - 逐步引導您完成配置\n`;
-                errorMsg += `2️⃣ 手動填寫 - 直接在下方表單中輸入您的 Cloudflare 配置\n\n`;
-                errorMsg += `提示: 確保您已安裝 Wrangler CLI 並登錄 Cloudflare 賬戶`;
+                // 构建友好的错误提示
+                let errorMsg = `❌ 自动检测失败\n\n`;
+                errorMsg += `错误原因: ${error.message}\n\n`;
+                errorMsg += `💡 您可以选择以下方式继续配置:\n\n`;
+                errorMsg += `1️⃣ 使用 📖 配置向导 - 逐步引导您完成配置（推荐）\n`;
+                errorMsg += `2️⃣ 手动填写 - 直接在下方表单中输入您的 Cloudflare 配置\n\n`;
+                errorMsg += `提示: 确保您已安装 Wrangler CLI 并登录 Cloudflare 账户`;
 
                 showCfHelperResult(errorMsg, 'error');
 
-                // 高亮配置向導按鈕以引導用戶注意
+                // 高亮配置向导按钮以引导用户注意
                 const wizardBtn = document.getElementById('wizardBtn');
                 if (wizardBtn) {
                     wizardBtn.style.animation = 'pulse 2s ease-in-out 3';

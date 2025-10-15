@@ -100,3 +100,7 @@ temp/
 
 # Claude
 .claude
+
+# Debug/Diagnostic Tools
+quick_fix.py
+verify_config.py
