@@ -271,37 +271,70 @@ class LogService:
 
     async def get_stats(self) -> Dict:
         """獲取統計信息"""
-        async with self._lock:
-            total = len(self.history)
+        try:
+            async with self._lock:
+                total = len(self.history)
 
-            # 統計各級別數量
-            level_counts = {}
-            for level in LogLevel:
-                level_counts[level.value] = sum(
-                    1 for entry in self.history if entry.level == level
-                )
+                # 統計各級別數量
+                level_counts = {}
+                for level in LogLevel:
+                    try:
+                        level_counts[level.value] = sum(
+                            1 for entry in self.history if entry.level == level
+                        )
+                    except Exception as e:
+                        # 單個級別統計失敗，記錄並繼續
+                        print(f"⚠️ 統計級別 {level.value} 失敗: {e}")
+                        level_counts[level.value] = 0
 
-            # 統計各類型數量
-            type_counts = {}
-            for log_type in LogType:
-                type_counts[log_type.value] = sum(
-                    1 for entry in self.history if entry.log_type == log_type
-                )
+                # 統計各類型數量
+                type_counts = {}
+                for log_type in LogType:
+                    try:
+                        type_counts[log_type.value] = sum(
+                            1 for entry in self.history if entry.log_type == log_type
+                        )
+                    except Exception as e:
+                        # 單個類型統計失敗，記錄並繼續
+                        print(f"⚠️ 統計類型 {log_type.value} 失敗: {e}")
+                        type_counts[log_type.value] = 0
 
-            # 統計獨立IP數量
-            unique_ips = set()
-            for entry in self.history:
-                if entry.details and 'client_ip' in entry.details:
-                    ip = entry.details['client_ip']
-                    if ip and ip != 'unknown':
-                        unique_ips.add(ip)
+                # 統計獨立IP數量
+                unique_ips = set()
+                try:
+                    for entry in self.history:
+                        if entry.details and 'client_ip' in entry.details:
+                            ip = entry.details['client_ip']
+                            if ip and ip != 'unknown':
+                                unique_ips.add(ip)
+                except Exception as e:
+                    # IP 統計失敗，記錄但返回空集合
+                    print(f"⚠️ 統計獨立 IP 失敗: {e}")
+                    unique_ips = set()
 
+                return {
+                    "total": total,
+                    "subscribers": len(self.subscribers),
+                    "level_counts": level_counts,
+                    "type_counts": type_counts,
+                    "unique_ips": len(unique_ips),
+                }
+        except Exception as e:
+            # 捕獲所有異常，記錄詳細錯誤
+            import traceback
+            error_detail = traceback.format_exc()
+            print(f"❌ 獲取日誌統計失敗: {str(e)}")
+            print(f"完整錯誤堆棧:\n{error_detail}")
+
+            # 返回空統計，避免整個服務失敗
             return {
-                "total": total,
-                "subscribers": len(self.subscribers),
-                "level_counts": level_counts,
-                "type_counts": type_counts,
-                "unique_ips": len(unique_ips),
+                "total": 0,
+                "subscribers": 0,
+                "level_counts": {},
+                "type_counts": {},
+                "unique_ips": 0,
+                "error": str(e),
+                "error_detail": error_detail
             }
 
 

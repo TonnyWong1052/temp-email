@@ -16,20 +16,61 @@ async def lifespan(app: FastAPI):
     """应用程序生命周期管理"""
     # 启动时
     print("🚀 Starting Temporary Email Service...")
+    print(f"   Port: {settings.port}")
+    print(f"   Environment: {'Development' if settings.reload else 'Production'}")
+
     try:
         origins = get_cors_origins_list()
         print(f"✅ CORS allow_origins: {origins}")
     except Exception:
         print("✅ CORS allow_origins: ['*'] (fallback)")
 
+    # 初始化 Redis（如果啟用）
+    if settings.enable_redis:
+        print("\n📦 Initializing Redis connection...")
+        try:
+            from app.services.redis_client import redis_client
+
+            connected = await redis_client.connect()
+            if connected:
+                print("✅ Redis connected successfully")
+                print(f"   URL: {settings.redis_url}")
+                print(f"   L1 Cache TTL: {settings.cache_ttl}s")
+                print(f"   Max Cache Size: {settings.cache_max_size}")
+                print("   ⚡️ High-performance caching enabled!")
+            else:
+                print("⚠️  Redis connection failed, falling back to in-memory storage")
+        except Exception as e:
+            print(f"⚠️  Redis initialization error: {e}")
+            print("   Falling back to in-memory storage")
+    else:
+        print("\nℹ️  Redis disabled - using in-memory storage")
+        print("   💡 Tip: Enable Redis for 10,000+ concurrent users support")
+
     # 启动后台清理任务
     cleanup_task = asyncio.create_task(cleanup_expired_emails())
+
+    print("\n✅ Service started successfully!")
+    print(f"   🌐 Web UI: http://localhost:{settings.port}")
+    print(f"   📚 API Docs: http://localhost:{settings.port}/docs")
+    print(f"   💪 Ready for high-traffic!\n")
 
     yield
 
     # 关闭时
+    print("\n👋 Shutting down...")
     cleanup_task.cancel()
-    print("👋 Shutting down...")
+
+    # 斷開 Redis 連接
+    if settings.enable_redis:
+        try:
+            from app.services.redis_client import redis_client
+            await redis_client.disconnect()
+            print("✅ Redis disconnected")
+        except Exception as e:
+            print(f"⚠️  Error disconnecting Redis: {e}")
+
+    print("✅ Shutdown complete")
 
 
 # 后台清理任务

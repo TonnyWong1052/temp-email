@@ -624,12 +624,73 @@ async def get_log_stats(current_user: str = Depends(get_current_user)):
     獲取日誌統計信息
     需要登入
     """
+    import traceback
 
-    stats = await log_service.get_stats()
-    return {
-        "success": True,
-        "stats": stats
-    }
+    try:
+        stats = await log_service.get_stats()
+
+        # 檢查統計中是否包含錯誤信息
+        if "error" in stats:
+            # 記錄錯誤到日誌服務
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.SYSTEM,
+                message=f"統計服務內部錯誤: {stats['error']}",
+                details={
+                    "error_type": "stats_internal_error",
+                    "error_message": stats['error'],
+                    "error_detail": stats.get('error_detail', ''),
+                }
+            )
+
+            # 返回帶有錯誤信息的響應（但不拋出異常，保持 200 狀態碼）
+            return {
+                "success": False,
+                "stats": stats,
+                "error": stats['error'],
+                "message": f"統計服務部分功能異常: {stats['error']}"
+            }
+
+        # 正常情況
+        return {
+            "success": True,
+            "stats": stats
+        }
+
+    except Exception as e:
+        # 捕獲所有未預期的異常
+        error_detail = traceback.format_exc()
+        error_message = f"獲取日誌統計失敗: {str(e)}"
+
+        # 記錄詳細錯誤到日誌服務（如果日誌服務可用）
+        try:
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.ERROR,
+                message=error_message,
+                details={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "error_traceback": error_detail,
+                    "endpoint": "/admin/logs/stats",
+                    "user": current_user
+                }
+            )
+        except:
+            # 如果日誌服務也失敗了，至少輸出到控制台
+            print(f"❌ 無法記錄錯誤日誌: {error_message}")
+            print(f"完整錯誤堆棧:\n{error_detail}")
+
+        # 返回詳細錯誤響應（5xx 狀態碼）
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": error_message,
+                "error_type": type(e).__name__,
+                "error_detail": error_detail if settings.reload else str(e),  # 開發模式顯示完整堆棧
+                "timestamp": datetime.now().isoformat()
+            }
+        )
 
 
 @router.post("/logs/clear")
@@ -1143,3 +1204,186 @@ async def check_deploy_status(current_user: str = Depends(get_current_user)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"检查部署状态失败: {str(e)}")
+
+
+@router.post("/cloudflare/test-and-check")
+async def test_and_check_cloudflare(current_user: str = Depends(get_current_user)):
+    """
+    統一檢查：配置完整性 + 連接測試
+    需要登錄
+
+    執行步驟：
+    1. 檢查配置是否存在
+    2. 如果配置存在，執行完整的連接測試（Token → Account → Namespace）
+    3. 返回詳細的分步驟結果和修復建議
+
+    Returns:
+        {
+            "success": bool,
+            "config_check": {...},  # 配置檢查結果
+            "connection_test": {...},  # 連接測試結果（如果配置完整）
+            "message": str,
+            "suggestions": []  # 修復建議
+        }
+    """
+    try:
+        result = {
+            "success": False,
+            "config_check": {},
+            "connection_test": None,
+            "message": "",
+            "suggestions": []
+        }
+
+        # ========== 步驟 1: 配置完整性檢查 ==========
+        missing_items = []
+        if not settings.cf_account_id or not settings.cf_account_id.strip():
+            missing_items.append("CF_ACCOUNT_ID")
+        if not settings.cf_kv_namespace_id or not settings.cf_kv_namespace_id.strip():
+            missing_items.append("CF_KV_NAMESPACE_ID")
+        if not settings.cf_api_token or not settings.cf_api_token.strip():
+            missing_items.append("CF_API_TOKEN")
+
+        result["config_check"] = {
+            "complete": len(missing_items) == 0,
+            "missing_items": missing_items,
+            "cf_account_id_configured": bool(settings.cf_account_id and settings.cf_account_id.strip()),
+            "cf_kv_namespace_id_configured": bool(settings.cf_kv_namespace_id and settings.cf_kv_namespace_id.strip()),
+            "cf_api_token_configured": bool(settings.cf_api_token and settings.cf_api_token.strip())
+        }
+
+        # 配置不完整 - 返回提示
+        if missing_items:
+            result["message"] = f"⚠️ 配置不完整，缺少：{', '.join(missing_items)}"
+            result["suggestions"] = [
+                "1️⃣ 方法一：使用「自動檢測」按鈕（如果已安裝 Wrangler CLI）",
+                "2️⃣ 方法二：使用「配置向導」按鈕，按步驟手動配置",
+                "3️⃣ 方法三：直接在下方表單填寫配置並保存"
+            ]
+
+            # 針對性建議
+            if "CF_ACCOUNT_ID" in missing_items:
+                result["suggestions"].append("📝 獲取 Account ID: https://dash.cloudflare.com/ → 右側「⋮」→ 複製帳戶 ID")
+            if "CF_KV_NAMESPACE_ID" in missing_items:
+                result["suggestions"].append("📦 創建 Namespace: wrangler kv namespace create EMAIL_STORAGE")
+            if "CF_API_TOKEN" in missing_items:
+                result["suggestions"].append("🔑 創建 API Token: https://dash.cloudflare.com/profile/api-tokens → 權限需要：Account Settings: Read + Workers KV Storage: Read")
+
+            return result
+
+        # ========== 步驟 2: 連接測試 ==========
+        await log_service.log(
+            level=LogLevel.INFO,
+            log_type=LogType.SYSTEM,
+            message="開始執行 Cloudflare KV 連接測試",
+            details={
+                "account_id": settings.cf_account_id[:8] + "...",
+                "namespace_id": settings.cf_kv_namespace_id[:8] + "..."
+            }
+        )
+
+        connection_result = await cloudflare_helper.test_connection(
+            account_id=settings.cf_account_id,
+            namespace_id=settings.cf_kv_namespace_id,
+            api_token=settings.cf_api_token
+        )
+
+        result["connection_test"] = connection_result
+
+        # 連接測試成功
+        if connection_result.get("success"):
+            result["success"] = True
+            result["message"] = "✅ 配置完整且連接正常！Cloudflare KV 已準備就緒"
+            result["suggestions"] = [
+                "🎉 所有檢查通過，您可以開始使用 Cloudflare KV 接收郵件了",
+                "💡 別忘了配置 Email Routing：https://dash.cloudflare.com → 選擇域名 → Email → Email Routing"
+            ]
+
+            await log_service.log(
+                level=LogLevel.SUCCESS,
+                log_type=LogType.SYSTEM,
+                message="Cloudflare KV 連接測試成功",
+                details={
+                    "checks_passed": len(connection_result.get("checks", [])),
+                    "overall_status": connection_result.get("overall_status")
+                }
+            )
+
+            return result
+
+        # 連接測試失敗 - 分析失敗原因並提供建議
+        result["message"] = f"❌ {connection_result.get('message', '連接測試失敗')}"
+
+        # 根據失敗的檢查項提供針對性建議
+        checks = connection_result.get("checks", [])
+        for check in checks:
+            check_name = check.get("name", "")
+            check_status = check.get("status", "")
+            check_message = check.get("message", "")
+
+            if check_status == "failed":
+                if "API Token" in check_name:
+                    result["suggestions"].extend([
+                        "🔑 API Token 問題：",
+                        "  • 請前往 https://dash.cloudflare.com/profile/api-tokens 重新創建 Token",
+                        "  • 確保 Token 擁有以下權限：",
+                        "    - Account Settings: Read",
+                        "    - Workers KV Storage: Read",
+                        "  • 檢查 Token 是否已過期"
+                    ])
+                elif "Account ID" in check_name:
+                    result["suggestions"].extend([
+                        "🆔 Account ID 問題：",
+                        "  • 請前往 https://dash.cloudflare.com/",
+                        "  • 點擊右側「⋮」按鈕",
+                        "  • 確認帳戶 ID 是否正確（32 位十六進制字符串）",
+                        f"  • 當前配置：{settings.cf_account_id[:8]}..."
+                    ])
+                elif "Namespace" in check_name:
+                    result["suggestions"].extend([
+                        "📦 KV Namespace 問題：",
+                        "  • Namespace ID 不存在或無法訪問",
+                        "  • 請執行：wrangler kv namespace create EMAIL_STORAGE",
+                        "  • 或前往 https://dash.cloudflare.com → Workers & Pages → KV",
+                        "  • 檢查 Namespace 是否已創建",
+                        f"  • 當前配置：{settings.cf_kv_namespace_id[:8]}..."
+                    ])
+
+        # 如果沒有具體建議，提供通用建議
+        if not result["suggestions"]:
+            result["suggestions"] = [
+                "⚠️ 連接測試失敗，請檢查以下項目：",
+                "1. API Token 是否有效且未過期",
+                "2. Account ID 是否正確",
+                "3. KV Namespace 是否已創建",
+                "4. 網絡連接是否正常",
+                "5. Cloudflare 服務是否正常運行"
+            ]
+
+        await log_service.log(
+            level=LogLevel.ERROR,
+            log_type=LogType.SYSTEM,
+            message="Cloudflare KV 連接測試失敗",
+            details={
+                "overall_status": connection_result.get("overall_status"),
+                "failed_checks": [c for c in checks if c.get("status") == "failed"]
+            }
+        )
+
+        return result
+
+    except Exception as e:
+        await log_service.log(
+            level=LogLevel.ERROR,
+            log_type=LogType.SYSTEM,
+            message=f"統一檢查異常: {str(e)}",
+            details={
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"檢查過程中發生錯誤: {str(e)}"
+        )

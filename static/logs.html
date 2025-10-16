@@ -318,7 +318,7 @@
             color: white;
         }
 
-        /* IP 統計彈窗樣式 */
+        /* IP 统计弹窗樣式 */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -519,6 +519,88 @@
             font-size: 12px;
             font-weight: 600;
         }
+
+        /* 錯誤詳情樣式 */
+        .log-details-toggle {
+            cursor: pointer;
+            color: #3b82f6;
+            font-size: 11px;
+            margin-left: 8px;
+            padding: 2px 8px;
+            border: 1px solid #3b82f6;
+            border-radius: 3px;
+            background: transparent;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .log-details-toggle:hover {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .log-details {
+            display: none;
+            margin-top: 8px;
+            padding: 12px;
+            background: #0f1419;
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .log-details.expanded {
+            display: block;
+        }
+
+        .log-details-section {
+            margin-bottom: 12px;
+        }
+
+        .log-details-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .log-details-title {
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .log-details-content {
+            background: #18181b;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #27272a;
+            color: #e4e4e7;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .log-details-hint {
+            background: #92400e;
+            border: 1px solid #f59e0b;
+            color: #fbbf24;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .log-details-error {
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 8px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -538,6 +620,18 @@
     </div>
 
     <div class="filters">
+        <!-- 快速过滤预设 -->
+        <div class="filter-group">
+            <div class="filter-label">🎯 快速过滤</div>
+            <div class="filter-pills">
+                <div class="pill active" data-preset="all">全部</div>
+                <div class="pill" data-preset="errors">仅错误</div>
+                <div class="pill" data-preset="slow">慢请求</div>
+                <div class="pill" data-preset="recent">最近 5 分钟</div>
+            </div>
+        </div>
+
+        <!-- 日志级别 -->
         <div class="filter-group">
             <div class="filter-label">日志级别</div>
             <div class="filter-pills">
@@ -549,6 +643,8 @@
                 <div class="pill" data-level="success">Success</div>
             </div>
         </div>
+
+        <!-- 日志类型 -->
         <div class="filter-group">
             <div class="filter-label">日志类型</div>
             <div class="filter-pills">
@@ -560,21 +656,65 @@
                 <div class="pill" data-type="llm_call">LLM 调用</div>
             </div>
         </div>
+
+        <!-- 请求方法 -->
         <div class="filter-group">
             <div class="filter-label">请求方法</div>
             <div class="filter-pills">
                 <div class="pill active" data-method="all">全部</div>
                 <div class="pill" data-method="GET">GET</div>
                 <div class="pill" data-method="POST">POST</div>
+                <div class="pill" data-method="DELETE">DELETE</div>
+                <div class="pill" data-method="PUT">PUT</div>
             </div>
         </div>
+
+        <!-- 时间范围 -->
+        <div class="filter-group">
+            <div class="filter-label">⏰ 时间范围</div>
+            <div class="filter-pills">
+                <div class="pill active" data-timerange="all">全部</div>
+                <div class="pill" data-timerange="5m">5 分钟</div>
+                <div class="pill" data-timerange="1h">1 小时</div>
+                <div class="pill" data-timerange="today">今天</div>
+                <div class="pill" data-timerange="24h">24 小时</div>
+            </div>
+        </div>
+
+        <!-- 持续时间（慢请求） -->
+        <div class="filter-group">
+            <div class="filter-label">⏱️ 持续时间</div>
+            <div class="filter-pills">
+                <div class="pill active" data-duration="all">全部</div>
+                <div class="pill" data-duration="fast">&lt; 100ms</div>
+                <div class="pill" data-duration="medium">100-500ms</div>
+                <div class="pill" data-duration="slow">&gt; 500ms</div>
+                <div class="pill" data-duration="veryslow">&gt; 1000ms</div>
+            </div>
+        </div>
+
+        <!-- 端点路径 -->
+        <div class="filter-group" style="min-width: 200px;">
+            <div class="filter-label">🎯 端点路径</div>
+            <input type="text" class="search-input" id="pathFilter" placeholder="例如: /api/email" style="width: 100%;">
+        </div>
+
+        <!-- IP 地址 -->
+        <div class="filter-group" style="min-width: 150px;">
+            <div class="filter-label">🌐 IP 地址</div>
+            <input type="text" class="search-input" id="ipFilter" placeholder="例如: 192.168">
+        </div>
+
+        <!-- 高级过滤 -->
         <div class="filter-group">
             <div class="filter-label">高级过滤</div>
             <div class="filter-pills">
                 <input type="checkbox" id="hideStats" class="pill" checked hidden>
-                <label for="hideStats" class="pill">隐藏统计请求</label>
+                <label for="hideStats" class="pill">隐藏统计</label>
             </div>
         </div>
+
+        <!-- 关键字搜索 -->
         <div class="search-box">
             <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜索关键字...">
         </div>
@@ -610,13 +750,13 @@
         </div>
     </div>
 
-    <!-- IP 統計彈窗 -->
+    <!-- IP 统计弹窗 -->
     <div class="modal-overlay" id="ipStatsModal">
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title">
                     <span>🌍</span>
-                    <span>IP 地理位置統計</span>
+                    <span>IP 地理位置</span>
                 </div>
                 <button class="modal-close" id="closeIpStatsBtn">✕ 关闭</button>
             </div>
@@ -634,11 +774,16 @@
         let logs = [];
         let isPaused = false;
         let filters = {
-            level: 'all',
-            types: [],  // 改為數組，支持多選
-            method: 'all',
-            keyword: '',
-            hideStats: true
+            preset: 'all',           // 快速预设
+            level: 'all',            // 日志级别
+            types: [],               // 日志类型（多选）
+            method: 'all',           // 请求方法
+            timeRange: 'all',        // 时间范围
+            duration: 'all',         // 持续时间
+            pathFilter: '',          // 端点路径过滤
+            ipFilter: '',            // IP 地址过滤
+            keyword: '',             // 关键字搜索
+            hideStats: true          // 隐藏统计请求
         };
 
         const logContainer = document.getElementById('logContainer');
@@ -702,7 +847,7 @@
                     // 重新检查认证
                     checkAuth().then(isAuth => {
                         if (isAuth) {
-                            // 如果仍然認證有效，5秒後重連
+                            // 如果仍然认证有效，5秒後重連
                             setTimeout(connectSSE, 5000);
                         }
                     });
@@ -767,6 +912,14 @@
             const logType = (log.type || log.log_type || log.category || '').toString();
             const ip = ((log.details && (log.details.client_ip || log.details.ip)) || log.client_ip || '').toString();
 
+            // 檢查是否為錯誤日誌（需要顯示詳情按鈕）
+            const isError = (
+                log.level === 'error' ||
+                log.level === 'warning' ||
+                (log.details && log.details.status_code >= 400) ||
+                (log.details && (log.details.traceback || log.details.error_hint || log.details.request_headers))
+            );
+
             let html = `
                 <span class="log-timestamp">${timestamp}</span>
                 <span class="log-level ${log.level}">${log.level}</span>
@@ -779,7 +932,18 @@
                 html += `<span class="log-duration">${log.duration_ms.toFixed(0)}ms</span>`;
             }
 
+            // 如果是錯誤，添加「查看詳情」按鈕
+            if (isError) {
+                html += `<span class="log-details-toggle" onclick="toggleLogDetails(this)">🔍 詳情</span>`;
+            }
+
             entry.innerHTML = html;
+
+            // 如果是錯誤，添加詳情面板
+            if (isError) {
+                const detailsPanel = createLogDetailsPanel(log);
+                entry.appendChild(detailsPanel);
+            }
 
             // 只有新日志才移除动画类
             if (isNew) {
@@ -789,9 +953,186 @@
             return entry;
         }
 
+        // 創建日誌詳情面板
+        function createLogDetailsPanel(log) {
+            const panel = document.createElement('div');
+            panel.className = 'log-details';
+
+            let detailsHtml = '';
+
+            // 錯誤提示
+            if (log.details && log.details.error_hint) {
+                detailsHtml += `
+                    <div class="log-details-hint">
+                        ⚠️ ${escapeHtml(log.details.error_hint)}
+                    </div>
+                `;
+            }
+
+            // 錯誤信息
+            if (log.details && log.details.error) {
+                detailsHtml += `
+                    <div class="log-details-section">
+                        <div class="log-details-title">❌ 錯誤信息</div>
+                        <div class="log-details-error">
+                            <strong>${escapeHtml(log.details.error_type || 'Error')}</strong>: ${escapeHtml(log.details.error)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 請求信息
+            if (log.details) {
+                // 請求 Headers
+                if (log.details.request_headers) {
+                    detailsHtml += `
+                        <div class="log-details-section">
+                            <div class="log-details-title">📤 請求 Headers</div>
+                            <div class="log-details-content">${escapeHtml(JSON.stringify(log.details.request_headers, null, 2))}</div>
+                        </div>
+                    `;
+                }
+
+                // 請求 Query 參數
+                if (log.details.request_query && Object.keys(log.details.request_query).length > 0) {
+                    detailsHtml += `
+                        <div class="log-details-section">
+                            <div class="log-details-title">🔗 Query 參數</div>
+                            <div class="log-details-content">${escapeHtml(JSON.stringify(log.details.request_query, null, 2))}</div>
+                        </div>
+                    `;
+                }
+
+                // 請求 Body
+                if (log.details.request_body) {
+                    detailsHtml += `
+                        <div class="log-details-section">
+                            <div class="log-details-title">📝 請求 Body</div>
+                            <div class="log-details-content">${escapeHtml(log.details.request_body)}</div>
+                        </div>
+                    `;
+                }
+
+                // 響應 Headers
+                if (log.details.response_headers) {
+                    detailsHtml += `
+                        <div class="log-details-section">
+                            <div class="log-details-title">📥 響應 Headers</div>
+                            <div class="log-details-content">${escapeHtml(JSON.stringify(log.details.response_headers, null, 2))}</div>
+                        </div>
+                    `;
+                }
+
+                // 錯誤堆棧
+                if (log.details.traceback) {
+                    detailsHtml += `
+                        <div class="log-details-section">
+                            <div class="log-details-title">🐛 錯誤堆棧</div>
+                            <div class="log-details-content">${escapeHtml(log.details.traceback)}</div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 如果沒有任何詳情，顯示提示
+            if (!detailsHtml) {
+                detailsHtml = `
+                    <div class="log-details-hint">
+                        ℹ️ 沒有可用的詳細信息
+                    </div>
+                `;
+            }
+
+            panel.innerHTML = detailsHtml;
+            return panel;
+        }
+
+        // 切換日誌詳情展開/收起
+        function toggleLogDetails(button) {
+            const logEntry = button.closest('.log-entry');
+            const detailsPanel = logEntry.querySelector('.log-details');
+
+            if (detailsPanel) {
+                detailsPanel.classList.toggle('expanded');
+
+                // 更新按鈕文本
+                if (detailsPanel.classList.contains('expanded')) {
+                    button.textContent = '🔼 收起';
+                } else {
+                    button.textContent = '🔍 詳情';
+                }
+            }
+        }
+
         // 过滤日志
         function filterLogs() {
+            const now = new Date();
+
             return logs.filter(log => {
+                // 时间范围过滤
+                if (filters.timeRange !== 'all') {
+                    const logTime = new Date(log.timestamp);
+                    const diffMs = now - logTime;
+
+                    switch (filters.timeRange) {
+                        case '5m':
+                            if (diffMs > 5 * 60 * 1000) return false;
+                            break;
+                        case '1h':
+                            if (diffMs > 60 * 60 * 1000) return false;
+                            break;
+                        case 'today':
+                            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                            if (logTime < today) return false;
+                            break;
+                        case '24h':
+                            if (diffMs > 24 * 60 * 60 * 1000) return false;
+                            break;
+                    }
+                }
+
+                // 持续时间过滤（慢请求）
+                if (filters.duration !== 'all' && log.duration_ms !== null && log.duration_ms !== undefined) {
+                    const duration = log.duration_ms;
+                    switch (filters.duration) {
+                        case 'fast':
+                            if (duration >= 100) return false;
+                            break;
+                        case 'medium':
+                            if (duration < 100 || duration >= 500) return false;
+                            break;
+                        case 'slow':
+                            if (duration < 500) return false;
+                            break;
+                        case 'veryslow':
+                            if (duration < 1000) return false;
+                            break;
+                    }
+                } else if (filters.duration !== 'all' && (log.duration_ms === null || log.duration_ms === undefined)) {
+                    // 如果选择了持续时间过滤，但日志没有 duration_ms，則过滤掉
+                    return false;
+                }
+
+                // IP 地址过滤
+                if (filters.ipFilter) {
+                    const ip = ((log.details && (log.details.client_ip || log.details.ip)) || log.client_ip || '').toString();
+                    if (!ip.includes(filters.ipFilter)) {
+                        return false;
+                    }
+                }
+
+                // 端点路径过滤
+                if (filters.pathFilter) {
+                    const path = (
+                        (log.details && (log.details.path || log.details.url)) ||
+                        ((log.message || '').split(' ')[1]) ||
+                        ''
+                    ).toString().toLowerCase();
+                    if (!path.includes(filters.pathFilter.toLowerCase())) {
+                        return false;
+                    }
+                }
+
                 // 级别过滤
                 if (filters.level !== 'all' && log.level !== filters.level) {
                     return false;
@@ -887,14 +1228,116 @@
 
             // 获取订阅者数量（从后端）
             fetch('/admin/logs/stats', { credentials: 'include' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('subscriberCount').textContent = data.stats.subscribers;
-                        document.getElementById('uniqueIpCount').textContent = data.stats.unique_ips || 0;
+                .then(async res => {
+                    const contentType = res.headers.get('content-type');
+
+                    // 如果是 JSON 响应
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await res.json();
+
+                        // HTTP 状态码成功（200-299）
+                        if (res.ok) {
+                            if (data.success) {
+                                // 正常统计
+                                document.getElementById('subscriberCount').textContent = data.stats.subscribers;
+                                document.getElementById('uniqueIpCount').textContent = data.stats.unique_ips || 0;
+
+                                // 清除可能的错误提示
+                                const existingError = document.getElementById('statsError');
+                                if (existingError) {
+                                    existingError.remove();
+                                }
+                            } else {
+                                // 统计服务内部错误（但 HTTP 200）
+                                console.warn('统计服务内部错误:', data);
+                                showStatsError('统计服务部分功能异常', data.error, data.message);
+                            }
+                        } else {
+                            // HTTP 错误状态码（4xx, 5xx）
+                            const errorMsg = data.detail || data.error || data.message || '未知错误';
+                            console.error(`统计 API 错误 (HTTP ${res.status}):`, data);
+
+                            // 提取详细错误信息
+                            let errorDetail = '';
+                            if (typeof data.detail === 'object') {
+                                errorDetail = data.detail.error_detail || data.detail.error || JSON.stringify(data.detail);
+                            } else {
+                                errorDetail = errorMsg;
+                            }
+
+                            showStatsError(
+                                `统计 API 错误 (HTTP ${res.status})`,
+                                errorDetail,
+                                `状态码: ${res.status} ${res.statusText}`
+                            );
+                        }
+                    } else {
+                        // 非 JSON 响应（可能是 HTML 错误页面）
+                        const text = await res.text();
+                        console.error(`统计 API 返回非 JSON 响应 (HTTP ${res.status}):`, text.substring(0, 500));
+                        showStatsError(
+                            `统计 API 错误 (HTTP ${res.status})`,
+                            '服務器返回非 JSON 响应',
+                            `状态码: ${res.status} ${res.statusText}`
+                        );
                     }
                 })
-                .catch(err => console.error('获取统计失败:', err));
+                .catch(err => {
+                    // 网络错误或其他异常
+                    console.error('获取统计失败:', err);
+                    showStatsError(
+                        '网络错误',
+                        err.message,
+                        '无法连接到统计服务，请检查网络连接'
+                    );
+                });
+        }
+
+        // 显示统计错误提示
+        function showStatsError(title, errorDetail, hint) {
+            // 移除旧的错误提示
+            const existingError = document.getElementById('statsError');
+            if (existingError) {
+                existingError.remove();
+            }
+
+            // 创建错误提示元素
+            const errorDiv = document.createElement('div');
+            errorDiv.id = 'statsError';
+            errorDiv.style.cssText = `
+                background: #7f1d1d;
+                border: 1px solid #ef4444;
+                color: #fca5a5;
+                padding: 12px 16px;
+                margin: 12px 24px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-family: 'Monaco', 'Courier New', monospace;
+                line-height: 1.5;
+            `;
+
+            errorDiv.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 8px;">⚠️ ${escapeHtml(title)}</div>
+                ${hint ? `<div style="margin-bottom: 6px; color: #fbbf24;">${escapeHtml(hint)}</div>` : ''}
+                <details style="margin-top: 8px;">
+                    <summary style="cursor: pointer; user-select: none;">🔍 查看详细错误</summary>
+                    <pre style="margin-top: 8px; padding: 8px; background: #18181b; border: 1px solid #27272a; border-radius: 4px; overflow-x: auto; font-size: 11px; color: #e4e4e7;">${escapeHtml(errorDetail)}</pre>
+                </details>
+            `;
+
+            // 插入到统计栏下方
+            const statsDiv = document.getElementById('stats');
+            if (statsDiv && statsDiv.nextSibling) {
+                statsDiv.parentNode.insertBefore(errorDiv, statsDiv.nextSibling);
+            } else if (statsDiv) {
+                statsDiv.parentNode.appendChild(errorDiv);
+            } else {
+                // 如果找不到 stats div，插入到日誌容器前
+                const logContainer = document.getElementById('logContainer');
+                if (logContainer) {
+                    logContainer.parentNode.insertBefore(errorDiv, logContainer);
+                }
+            }
         }
 
         // 过滤器事件
@@ -964,6 +1407,148 @@
             renderLogs();
         });
 
+        // 🎯 快速预设过滤器
+        document.querySelectorAll('[data-preset]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const preset = pill.dataset.preset;
+
+                // 重置所有过滤器到默认状态
+                function resetAllFilters() {
+                    filters.level = 'all';
+                    filters.types = [];
+                    filters.method = 'all';
+                    filters.timeRange = 'all';
+                    filters.duration = 'all';
+                    filters.pathFilter = '';
+                    filters.ipFilter = '';
+                    filters.keyword = '';
+
+                    // 重置 UI
+                    document.querySelectorAll('[data-level]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-level="all"]').classList.add('active');
+
+                    document.querySelectorAll('[data-type]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-type="all"]').classList.add('active');
+
+                    document.querySelectorAll('[data-method]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-method="all"]').classList.add('active');
+
+                    document.querySelectorAll('[data-timerange]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-timerange="all"]').classList.add('active');
+
+                    document.querySelectorAll('[data-duration]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-duration="all"]').classList.add('active');
+
+                    document.getElementById('pathFilter').value = '';
+                    document.getElementById('ipFilter').value = '';
+                    document.getElementById('searchInput').value = '';
+                }
+
+                // 更新预设按钮状态
+                document.querySelectorAll('[data-preset]').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+
+                filters.preset = preset;
+
+                switch (preset) {
+                    case 'all':
+                        // 全部：重置所有过滤器
+                        resetAllFilters();
+                        break;
+
+                    case 'errors':
+                        // 仅错误：显示 error 和 warning 级别
+                        resetAllFilters();
+                        filters.level = 'error';
+                        document.querySelectorAll('[data-level]').forEach(p => p.classList.remove('active'));
+                        document.querySelector('[data-level="error"]').classList.add('active');
+                        break;
+
+                    case 'slow':
+                        // 慢请求：持续时间 > 500ms
+                        resetAllFilters();
+                        filters.duration = 'slow';
+                        document.querySelectorAll('[data-duration]').forEach(p => p.classList.remove('active'));
+                        document.querySelector('[data-duration="slow"]').classList.add('active');
+                        break;
+
+                    case 'recent':
+                        // 最近 5 分鐘
+                        resetAllFilters();
+                        filters.timeRange = '5m';
+                        document.querySelectorAll('[data-timerange]').forEach(p => p.classList.remove('active'));
+                        document.querySelector('[data-timerange="5m"]').classList.add('active');
+                        break;
+                }
+
+                renderLogs();
+            });
+        });
+
+        // ⏰ 时间范围过滤器
+        document.querySelectorAll('[data-timerange]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('[data-timerange]').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                filters.timeRange = pill.dataset.timerange;
+
+                // 如果不是 "all"，則取消快速预设
+                if (filters.timeRange !== 'all') {
+                    document.querySelectorAll('[data-preset]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-preset="all"]').classList.add('active');
+                    filters.preset = 'all';
+                }
+
+                renderLogs();
+            });
+        });
+
+        // ⏱️ 持续时间过滤器
+        document.querySelectorAll('[data-duration]').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('[data-duration]').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                filters.duration = pill.dataset.duration;
+
+                // 如果不是 "all"，則取消快速预设
+                if (filters.duration !== 'all') {
+                    document.querySelectorAll('[data-preset]').forEach(p => p.classList.remove('active'));
+                    document.querySelector('[data-preset="all"]').classList.add('active');
+                    filters.preset = 'all';
+                }
+
+                renderLogs();
+            });
+        });
+
+        // 🎯 端点路径过滤器
+        document.getElementById('pathFilter').addEventListener('input', (e) => {
+            filters.pathFilter = e.target.value;
+
+            // 如果有輸入，則取消快速预设
+            if (filters.pathFilter) {
+                document.querySelectorAll('[data-preset]').forEach(p => p.classList.remove('active'));
+                document.querySelector('[data-preset="all"]').classList.add('active');
+                filters.preset = 'all';
+            }
+
+            renderLogs();
+        });
+
+        // 🌐 IP 地址过滤器
+        document.getElementById('ipFilter').addEventListener('input', (e) => {
+            filters.ipFilter = e.target.value;
+
+            // 如果有輸入，則取消快速预设
+            if (filters.ipFilter) {
+                document.querySelectorAll('[data-preset]').forEach(p => p.classList.remove('active'));
+                document.querySelector('[data-preset="all"]').classList.add('active');
+                filters.preset = 'all';
+            }
+
+            renderLogs();
+        });
+
         // 暂停/继续
         document.getElementById('pauseBtn').addEventListener('click', (e) => {
             isPaused = !isPaused;
@@ -1015,7 +1600,7 @@
             return div.innerHTML;
         }
 
-        // IP 統計功能
+        // IP 统计功能
         const ipStatsModal = document.getElementById('ipStatsModal');
         const ipStatsModalBody = document.getElementById('ipStatsModalBody');
         const ipStatsBtn = document.getElementById('ipStatsBtn');
@@ -1031,7 +1616,7 @@
             return String.fromCodePoint(...codePoints);
         }
 
-        // 打開 IP 統計彈窗
+        // 打開 IP 统计弹窗
         async function openIpStats() {
             ipStatsModal.classList.add('active');
             ipStatsModalBody.innerHTML = `
@@ -1056,7 +1641,7 @@
                     throw new Error(data.message || '获取 IP 统计失败');
                 }
             } catch (error) {
-                console.error('加載 IP 統計失敗:', error);
+                console.error('加载 IP 统计失败:', error);
                 ipStatsModalBody.innerHTML = `
                     <div class="error-message">
                         <strong>❌ 加载失败</strong><br>
@@ -1066,12 +1651,12 @@
             }
         }
 
-        // 渲染 IP 統計數據
+        // 渲染 IP 统计数据
         function renderIpStats(data) {
             const { total_ips, total_requests, ips, country_stats } = data;
 
             let html = `
-                <!-- 統計摘要 -->
+                <!-- 统计摘要 -->
                 <div class="ip-stats-summary">
                     <div class="summary-card">
                         <div class="summary-label">唯一 IP 数量</div>
@@ -1088,7 +1673,7 @@
                 </div>
             `;
 
-            // 國家統計
+            // 国家统计
             if (country_stats && Object.keys(country_stats).length > 0) {
                 html += `
                     <h3 style="margin-bottom: 12px; font-size: 16px;">🌏 按国家统计</h3>
@@ -1156,7 +1741,7 @@
             ipStatsModalBody.innerHTML = html;
         }
 
-        // 關閉 IP 統計彈窗
+        // 关闭 IP 统计弹窗
         function closeIpStats() {
             ipStatsModal.classList.remove('active');
         }
@@ -1165,14 +1750,14 @@
         ipStatsBtn.addEventListener('click', openIpStats);
         closeIpStatsBtn.addEventListener('click', closeIpStats);
 
-        // 點擊遮罩層關閉彈窗
+        // 点击遮罩层关闭弹窗
         ipStatsModal.addEventListener('click', (e) => {
             if (e.target === ipStatsModal) {
                 closeIpStats();
             }
         });
 
-        // ESC 鍵關閉彈窗
+        // ESC 键关闭弹窗
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && ipStatsModal.classList.contains('active')) {
                 closeIpStats();

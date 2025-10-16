@@ -3,15 +3,54 @@
 version: '3.8'
 
 services:
+  # Redis 服務（用於分布式存儲和緩存）
+  redis:
+    image: redis:7-alpine
+    container_name: email-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - email-network
+
   temp-email:
     build: .
+    container_name: email-service
     ports:
       - "1234:1234"
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       # 服务器配置
       - PORT=1234
       - HOST=0.0.0.0
       - RELOAD=false
+
+      # Redis 配置（高流量支持）
+      - REDIS_URL=redis://redis:6379/0
+      - ENABLE_REDIS=true
+      - CACHE_TTL=30
+      - CACHE_MAX_SIZE=10000
+
+      # 流量控制配置
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_PER_MINUTE=60
+      - CIRCUIT_BREAKER_ENABLED=true
+      - CIRCUIT_BREAKER_THRESHOLD=5
+      - CIRCUIT_BREAKER_TIMEOUT=60
 
       # Cloudflare Workers KV 配置
       # ⚠️ 请填写你的 Cloudflare 凭据
@@ -46,3 +85,16 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+    networks:
+      - email-network
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  email-network:
+    driver: bridge

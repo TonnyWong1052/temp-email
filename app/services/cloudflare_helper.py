@@ -68,7 +68,7 @@ class CloudflareHelper:
             {
                 "id": 5,
                 "title": "运行部署cloudflare worker脚本",
-                "description": "如果尚未安装项目，请先克隆仓库:\ngit clone https://github.com/TonnyWong1052/temp-email.git\ncd temp-email\n\n然后在项目根目录执行部署脚本:\ncd workers\n./deploy.sh\n\n脚本会自动完成:\n1. 安装/检查 Wrangler CLI\n2. 登录 Cloudflare（首次需要浏览器授权）\n3. 创建 KV Namespace\n4. 部署 Email Worker 到 Cloudflare\n5. 生成 wrangler.toml 配置文件\n\n💡 手动配置 Wrangler（可选）：\n• 如需手动配置，可使用本页的「🧩 Wrangler 片段」和「✍️ 写入 wrangler.toml」功能\n• 生成 wrangler.toml 配置片段，复制到 workers/wrangler.toml 文件中\n• 然后运行: wrangler deploy",
+                "description": "如果尚未安装项目，请先克隆仓库:\ngit clone https://github.com/TonnyWong1052/temp-email.git\ncd temp-email\n\n然后在项目根目录执行部署脚本:\ncd workers\n./deploy.sh\n\n脚本会自动完成:\n1. 安装/检查 Wrangler CLI\n2. 登录 Cloudflare（首次需要浏览器授权）\n3. 创建 KV Namespace\n4. 部署 Email Worker 到 Cloudflare\n5. 生成 wrangler.toml 配置文件\n\n💡 手动配置 Wrangler（可选）：\n• 如需手动配置，可使用本页的「🧩 Wrangler 片段」或「✍️ 写入 wrangler.toml」功能\n• 生成 wrangler.toml 配置片段，复制到 workers/wrangler.toml 文件中\n• 然后运行: wrangler deploy",
                 "url": "https://github.com/TonnyWong1052/temp-email",
                 "hint": "首次运行会打开浏览器进行 Cloudflare 授权，请确保已登录 Cloudflare 账户。部署完成后会自动生成 wrangler.toml 配置。",
                 "field_id": None,
@@ -390,7 +390,8 @@ class CloudflareHelper:
                     "success": False,
                     "detected": False,
                     "error": "Wrangler CLI 未安装或未添加到 PATH",
-                    "suggestion": "请先安装: npm install -g wrangler"
+                    "suggestion": "请先安装: npm install -g wrangler",
+                    "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
                 }
 
             wrangler_version = version_result[1].strip()
@@ -407,7 +408,8 @@ class CloudflareHelper:
                     "detected": False,
                     "error": "Wrangler 未登录",
                     "suggestion": "请先登录: wrangler login",
-                    "wrangler_version": wrangler_version
+                    "wrangler_version": wrangler_version,
+                    "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
                 }
 
             # 解析 whoami 输出 (支持多种格式)
@@ -445,7 +447,8 @@ class CloudflareHelper:
                     "detected": False,
                     "error": "无法从 wrangler whoami 输出中提取 Account ID",
                     "suggestion": "请检查 Wrangler 是否正确登录",
-                    "wrangler_version": wrangler_version
+                    "wrangler_version": wrangler_version,
+                    "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
                 }
 
             # 获取 KV Namespaces 列表
@@ -483,7 +486,8 @@ class CloudflareHelper:
                                     "error": "未找到名为 'EMAIL_STORAGE' 的 KV Namespace",
                                     "suggestion": "请执行以下命令创建:\nwrangler kv namespace create EMAIL_STORAGE",
                                     "available_namespaces": available_names,
-                                    "note": f"当前存在 {len(namespaces)} 个 namespace，但都不符合要求"
+                                    "note": f"当前存在 {len(namespaces)} 个 namespace，但都不符合要求",
+                                    "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
                                 }
                         else:
                             # 没有任何 namespace
@@ -491,7 +495,8 @@ class CloudflareHelper:
                                 "success": False,
                                 "detected": False,
                                 "error": "未找到任何 KV Namespace",
-                                "suggestion": "请执行以下命令创建:\nwrangler kv namespace create EMAIL_STORAGE"
+                                "suggestion": "请执行以下命令创建:\nwrangler kv namespace create EMAIL_STORAGE",
+                                "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
                             }
                 except json.JSONDecodeError:
                     # 如果不是 JSON，尝试解析表格输出
@@ -510,7 +515,8 @@ class CloudflareHelper:
                             "success": False,
                             "detected": False,
                             "error": "未找到名为 'EMAIL_STORAGE' 的 KV Namespace",
-                            "suggestion": "请执行以下命令创建:\nwrangler kv namespace create EMAIL_STORAGE"
+                            "suggestion": "请执行以下命令创建:\nwrangler kv namespace create EMAIL_STORAGE",
+                            "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
                         }
 
             await log_service.log(
@@ -559,7 +565,8 @@ class CloudflareHelper:
                 "success": False,
                 "detected": False,
                 "error": f"自动检测失败: {str(e)}",
-                "suggestion": "请使用配置向导或手动填写"
+                "suggestion": "请使用配置向导或手动填写",
+                "fallback_hint": "✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引"
             }
 
     # ==================== New: KV Namespace Utilities ====================

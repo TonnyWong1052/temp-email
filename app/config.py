@@ -10,6 +10,19 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     reload: bool = True
 
+    # Redis（高流量支持）
+    redis_url: str = "redis://localhost:6379/0"  # Redis 連接 URL
+    enable_redis: bool = False  # 啟用 Redis 分布式存儲（需要先安裝 Redis）
+    cache_ttl: int = 30  # 緩存刷新間隔（秒）
+    cache_max_size: int = 10000  # 最大緩存條目數
+
+    # 流量控制配置
+    rate_limit_enabled: bool = True  # 啟用 API 限流
+    rate_limit_per_minute: int = 60  # 每個 IP 每分鐘最大請求數
+    circuit_breaker_enabled: bool = True  # 啟用斷路器（API 失敗時自動降級）
+    circuit_breaker_threshold: int = 5  # 連續失敗次數閾值
+    circuit_breaker_timeout: int = 60  # 斷路器恢復時間（秒）
+
     # Email
     email_api_url: str = "https://mail.chatgpt.org.uk/api/get-emails"
     email_ttl: int = 3600

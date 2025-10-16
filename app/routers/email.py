@@ -27,10 +27,12 @@ async def generate_email(
         email = email_service.generate_email(prefix, domain)
         storage_service.save_email(email)
 
+        # 回傳同時包含 email 與 address 欄位，確保向後相容
         return {
             "success": True,
             "data": {
                 "email": email.address,
+                "address": email.address,  # 向後相容：部分工具/測試使用 address 欄位
                 "token": email.token,
                 "createdAt": email.created_at.isoformat(),
                 "expiresAt": email.expires_at.isoformat(),

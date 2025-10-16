@@ -2732,3 +2732,93 @@ body {
     color: white;
     box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
 }
+
+/* === Mail List Loading State === */
+.mail-list-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    gap: var(--spacing-sm);
+    background: var(--primary-50);
+    border-bottom: 2px solid var(--primary-200);
+    margin-bottom: var(--spacing-xs);
+}
+
+.mail-list-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--primary-100);
+    border-top-color: var(--primary-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+.mail-list-loading-text {
+    font-size: 0.875rem;
+    color: var(--primary-700);
+    font-weight: 600;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Skeleton Loading for Mail Items */
+.mail-item-skeleton {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--gray-100);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-line {
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+    height: 16px;
+}
+
+.skeleton-line.wide {
+    width: 70%;
+}
+
+.skeleton-line.medium {
+    width: 50%;
+}
+
+.skeleton-line.short {
+    width: 30%;
+}
+
+.skeleton-line.badge {
+    width: 60px;
+    height: 20px;
+}
+
+.skeleton-text {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-preview {
+    margin-top: var(--spacing-sm);
+}
+
+.skeleton-preview .skeleton-line {
+    margin-bottom: var(--spacing-xs);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}

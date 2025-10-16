@@ -1,5 +1,5 @@
 import time
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from app.config import get_active_domains
 from app.models import HealthResponse
 from app.services.storage_service import storage_service
@@ -128,6 +128,49 @@ async def test_cloudflare_kv():
         result["cloudflare_kv"]["message"] = "Cloudflare KV 未启用。在 .env 中设置 USE_CLOUDFLARE_KV=true 以启用。"
 
     return result
+
+
+@router.get("/_debug/headers")
+async def debug_request_headers(request: Request):
+    """
+    調試端點：顯示所有請求頭和提取的 IP 地址
+
+    用於診斷反向代理配置問題，幫助確認是否正確傳遞了客戶端 IP 頭信息。
+
+    Returns:
+        - headers: 所有請求頭
+        - client_ip: request.client.host（Docker 內部 IP）
+        - extracted_ip: 從代理頭提取的���實 IP
+        - debug_info: IP 提取過程的詳細信息
+    """
+    from app.middleware.logging_middleware import get_client_ip
+
+    # 提取所有頭信息
+    headers = dict(request.headers)
+
+    # 提取 IP 相關信息
+    client_ip = request.client.host if request.client else "unknown"
+    extracted_ip = get_client_ip(request)
+
+    # 調試信息：顯示每個 IP 提取步驟
+    debug_info = {
+        "step_1_x_forwarded_for": request.headers.get("X-Forwarded-For"),
+        "step_2_x_real_ip": request.headers.get("X-Real-IP"),
+        "step_3_cf_connecting_ip": request.headers.get("CF-Connecting-IP"),
+        "step_4_client_host": client_ip,
+        "final_extracted_ip": extracted_ip,
+    }
+
+    return {
+        "success": True,
+        "data": {
+            "headers": headers,
+            "client_ip_raw": client_ip,
+            "extracted_ip": extracted_ip,
+            "debug_info": debug_info,
+            "message": "如果 extracted_ip 仍是私有 IP（172.x.x.x），請檢查反向代理配置"
+        }
+    }
 
 
 @router.get("/_debug/external-inbox")

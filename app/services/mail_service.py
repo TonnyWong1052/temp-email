@@ -13,25 +13,67 @@ from app.services.log_service import log_service, LogLevel, LogType
 
 
 class MailService:
-    """邮件接收服务 - 支持多种邮件来源"""
+    """邮件接收服务 - 支持多种邮件来源 + 智能緩存"""
 
-    async def fetch_mails(self, email: str) -> List[Mail]:
+    async def fetch_mails(self, email: str, force_refresh: bool = False) -> List[Mail]:
         """
-        從郵箱獲取郵件（智能路由）
+        從郵箱獲取郵件（智能路由 + 智能緩存）
+
+        ⚡️ 性能優化核心：
+        1. L1 緩存（30秒）- 高頻訪問直接返回，響應時間 <100ms
+        2. L2 緩存（5分鐘）- API 失敗時降級兜底
+        3. 請求合併 - 避免並發重複調用
+        4. 智能路由 - 按域名選擇最佳郵件源
 
         根據郵箱域名自動選擇郵件來源：
         - 自定義域名（在 CF_KV_DOMAINS 中）→ Cloudflare Workers KV
         - 內建域名（20個 pp.ua, gravityengine.cc 等）→ 外部 API (mail.chatgpt.org.uk)
 
-        智能路由邏輯：
-        1. 如果全局未啟用 KV → 所有域名使用外部 API
-        2. 如果啟用 KV 但未指定 cf_kv_domains → 所有域名使用 KV（向後兼容）
-        3. 如果指定了 cf_kv_domains → 按域名智能路由
+        Args:
+            email: 郵箱地址
+            force_refresh: 強制刷新緩存（跳過 L1 緩存）
+
+        Returns:
+            郵件列表
         """
         debug = bool(getattr(settings, "debug_email_fetch", False))
 
         if debug:
-            print(f"[Mail Service] fetch_mails() called for: {email}")
+            print(f"[Mail Service] fetch_mails() called for: {email}, force_refresh={force_refresh}")
+
+        # 如果 Redis 已啟用，使用智能緩存層
+        if settings.enable_redis:
+            try:
+                from app.services.cache_manager import cache_manager
+
+                # 使用緩存管理器（帶降級保護）
+                mails, from_cache = await cache_manager.get_or_fetch_mails(
+                    email=email,
+                    fetch_func=self._fetch_mails_without_cache,
+                    force_refresh=force_refresh
+                )
+
+                if debug:
+                    cache_status = "HIT" if from_cache else "MISS"
+                    print(f"[Mail Service] Cache {cache_status}: {len(mails)} mails")
+
+                return mails
+
+            except Exception as e:
+                # 緩存層失敗時降級到直接獲取
+                if debug:
+                    print(f"[Mail Service] Cache layer failed, falling back to direct fetch: {e}")
+
+        # Redis 未啟用或緩存失敗 → 直接獲取
+        return await self._fetch_mails_without_cache(email)
+
+    async def _fetch_mails_without_cache(self, email: str) -> List[Mail]:
+        """
+        直接從源獲取郵件（無緩存）
+
+        此方法被 cache_manager 調用，或在 Redis 未啟用時使用
+        """
+        debug = bool(getattr(settings, "debug_email_fetch", False))
 
         # 智能判断使用哪个来源
         from app.config import should_use_cloudflare_kv

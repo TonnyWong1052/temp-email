@@ -840,11 +840,8 @@
                                 <button class="btn btn-secondary" id="wizardBtn" style="flex: 1; min-width: 150px;">
                                     📖 配置向导
                                 </button>
-                                <button class="btn btn-ghost" id="testConnectionBtn" style="flex: 1; min-width: 150px;">
-                                    🔍 测试连接
-                                </button>
-                                <button class="btn btn-ghost" id="checkDeployBtn" style="flex: 1; min-width: 150px;">
-                                    📊 namespace 部署状态
+                                <button class="btn btn-primary" id="testConnectionBtn" style="flex: 1; min-width: 200px;">
+                                    🔍 测试连接并检查状态
                                 </button>
                             </div>
 
@@ -1432,63 +1429,19 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             }
         });
 
-        // 测试连接
+        // 测试连接并检查状态（统一检查）
         document.getElementById('testConnectionBtn').addEventListener('click', async () => {
-            const accountId = document.getElementById('cfAccountId').value;
-            const namespaceId = document.getElementById('cfKvNamespaceId').value;
-            const apiToken = document.getElementById('cfApiToken').value;
-
-            if (!accountId || !namespaceId || !apiToken) {
-                showCfHelperResult('请先填写 Cloudflare 配置信息', 'warning');
-                return;
-            }
-
             const btn = document.getElementById('testConnectionBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> 测试中...';
-            btn.disabled = true;
-
-            try {
-                const token = localStorage.getItem('admin_token');
-                const response = await fetch('/admin/cloudflare/test-connection', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        cf_account_id: accountId,
-                        cf_kv_namespace_id: namespaceId,
-                        cf_api_token: apiToken
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showTestResult(data);
-                } else {
-                    showCfHelperResult('测试失败: ' + (data.detail || '未知错误'), 'error');
-                }
-            } catch (error) {
-                showCfHelperResult('网络错误: ' + error.message, 'error');
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        // 检查部署状态
-        document.getElementById('checkDeployBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('checkDeployBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<span class="loading"></span> 检查中...';
             btn.disabled = true;
 
             try {
                 const token = localStorage.getItem('admin_token');
-                const response = await fetch('/admin/cloudflare/deploy-status', {
+                const response = await fetch('/admin/cloudflare/test-and-check', {
+                    method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     }
                 });
@@ -1496,21 +1449,46 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 const data = await response.json();
 
                 if (response.ok) {
-                    if (data.deployed) {
-                        let msg = `${data.message}\n\n`;
-                        if (data.namespace_id) {
-                            msg += `📦 Namespace ID: ${data.namespace_id}\n`;
+                    // 构建详细的结果消息
+                    let msg = data.message + '\n\n';
+
+                    // 显示配置检查结果
+                    if (data.config_check) {
+                        msg += '📋 配置检查：\n';
+                        if (data.config_check.complete) {
+                            msg += '  ✅ 配置完整\n';
+                            msg += `  • Account ID: ${data.config_check.cf_account_id_configured ? '✓' : '✗'}\n`;
+                            msg += `  • Namespace ID: ${data.config_check.cf_kv_namespace_id_configured ? '✓' : '✗'}\n`;
+                            msg += `  • API Token: ${data.config_check.cf_api_token_configured ? '✓' : '✗'}\n`;
+                        } else {
+                            msg += '  ⚠️ 配置不完整\n';
+                            if (data.config_check.missing_items && data.config_check.missing_items.length > 0) {
+                                msg += `  缺少: ${data.config_check.missing_items.join(', ')}\n`;
+                            }
                         }
-                        if (data.worker_url) {
-                            msg += `🔗 Worker URL: ${data.worker_url}\n`;
-                        }
-                        if (data.deploy_time) {
-                            msg += `⏰ 部署时间: ${data.deploy_time}\n`;
-                        }
-                        showCfHelperResult(msg, 'success');
-                    } else {
-                        showCfHelperResult(data.message, 'warning');
+                        msg += '\n';
                     }
+
+                    // 显示连接测试结果
+                    if (data.connection_test && data.connection_test.checks) {
+                        msg += '🔍 连接测试：\n';
+                        data.connection_test.checks.forEach(check => {
+                            msg += `  ${check.icon} ${check.name}: ${check.message}\n`;
+                        });
+                        msg += '\n';
+                    }
+
+                    // 显示修复建议
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        msg += '💡 建议：\n';
+                        data.suggestions.forEach(suggestion => {
+                            msg += suggestion + '\n';
+                        });
+                    }
+
+                    // 根据成功状态选择消息类型
+                    const msgType = data.success ? 'success' : (data.config_check && !data.config_check.complete ? 'warning' : 'error');
+                    showCfHelperResult(msg, msgType);
                 } else {
                     showCfHelperResult('检查失败: ' + (data.detail || '未知错误'), 'error');
                 }
@@ -1570,10 +1548,6 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                     let errorMsg = `⚠️ ${data.error || '自动检测失败'}\n\n`;
                     errorMsg += `💡 ${data.suggestion || '请使用配置向导或手动填写'}\n`;
 
-                    // 添加配置向导引导提示
-                    errorMsg += `\n✨ 推荐方案:\n`;
-                    errorMsg += `   点击 📖 配置向导 按钮，获取详细的配置步骤指引\n`;
-
                     // 如果有可用的 namespace 列表，显示出来
                     if (data.available_namespaces && data.available_namespaces.length > 0) {
                         errorMsg += `\n📦 当前可用的 KV Namespaces:\n`;
@@ -1584,7 +1558,14 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
                     // 如果有额外说明
                     if (data.note) {
-                        errorMsg += `\n${data.note}`;
+                        errorMsg += `\n${data.note}\n`;
+                    }
+
+                    // 优先使用后端返回的 fallback_hint，如果没有则使用默认提示
+                    if (data.fallback_hint) {
+                        errorMsg += `\n${data.fallback_hint}`;
+                    } else {
+                        errorMsg += `\n✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引`;
                     }
 
                     showCfHelperResult(errorMsg, 'warning');
@@ -1593,10 +1574,8 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 构建友好的错误提示
                 let errorMsg = `❌ 自动检测失败\n\n`;
                 errorMsg += `错误原因: ${error.message}\n\n`;
-                errorMsg += `💡 您可以选择以下方式继续配置:\n\n`;
-                errorMsg += `1️⃣ 使用 📖 配置向导 - 逐步引导您完成配置（推荐）\n`;
-                errorMsg += `2️⃣ 手动填写 - 直接在下方表单中输入您的 Cloudflare 配置\n\n`;
-                errorMsg += `提示: 确保您已安装 Wrangler CLI 并登录 Cloudflare 账户`;
+                errorMsg += `💡 请先安装 Wrangler CLI: npm install -g wrangler\n\n`;
+                errorMsg += `✨ 即使自动检测失败，您仍可点击「📖 配置向导」按钮，获取详细的配置步骤指引`;
 
                 showCfHelperResult(errorMsg, 'error');
 
@@ -2131,8 +2110,8 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 构建按钮区域
                 let actionsHtml = '<div class="wizard-step-actions">';
 
-                // 添加 Cloudflare 服务链接按钮（如果有 URL）
-                if (step.url) {
+                // 添加 Cloudflare 服务链接按钮（如果有 URL，但排除 step 5）
+                if (step.url && String(step.id) !== '5') {
                     // 根据步骤 ID 自定义按钮文本
                     let buttonText = '🔗 打开链接';
                     if (String(step.id) === '1') {
@@ -2143,8 +2122,6 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                         buttonText = '🔗 打开 API Token 管理';
                     } else if (String(step.id) === '4') {
                         buttonText = '🔗 前往 Node.js 官网';
-                    } else if (String(step.id) === '5') {
-                        buttonText = '🔗 查看项目仓库';
                     } else if (String(step.id) === '6') {
                         buttonText = '🔗 打开 Email Routing 配置';
                     }
@@ -2167,7 +2144,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 if (String(step.id) === '2') {
                     actionsHtml += `
                         <button class="btn btn-primary" onclick="ensureNamespaceAction()">
-                            🛠️ 创建 KV Namespace
+                            🛠️ 可选功能: 快速创建 KV Namespace
                         </button>
                     `;
                 }
@@ -2178,10 +2155,11 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                             <div style="font-size: 14px; color: var(--gray-700); margin-bottom: 12px; font-weight: 600;">
                                 🔧 手动配置选项 (如果自动部署失败):
                             </div>
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                                 <button class="btn btn-secondary" onclick="wranglerSnippetAction()" style="font-size: 13px;">
                                     🧩 Wrangler 片段
                                 </button>
+                                <span style="color: var(--gray-500); font-size: 13px;">或</span>
                                 <button class="btn btn-ghost" onclick="writeWranglerAction()" style="font-size: 13px;">
                                     ✍️ 写入 wrangler.toml
                                 </button>

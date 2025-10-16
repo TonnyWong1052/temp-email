@@ -139,7 +139,6 @@ const generateBtnText = document.getElementById('generateBtnText');
 const domainSelect = document.getElementById('domainSelect');
 const emailList = document.getElementById('emailList');
 const emailCount = document.getElementById('emailCount');
-const refreshAllBtn = document.getElementById('refreshAllBtn');
 const autoRefreshBtn = document.getElementById('autoRefreshBtn');
 const mailModal = document.getElementById('mailModal');
 const closeModal = document.getElementById('closeModal');
@@ -157,7 +156,6 @@ const apiNotifyToggleBtn = document.getElementById('apiNotifyToggleBtn');
 
 // Event Listeners
 generateBtn.addEventListener('click', generateEmail);
-if (refreshAllBtn) refreshAllBtn.addEventListener('click', refreshAllEmails);
 if (autoRefreshBtn) autoRefreshBtn.addEventListener('click', toggleAutoRefresh);
 if (clearTerminalBtn) clearTerminalBtn.addEventListener('click', clearTerminalLog);
 if (apiNotifyToggleBtn) apiNotifyToggleBtn.addEventListener('click', toggleApiNotifications);
@@ -694,9 +692,44 @@ async function fetchMailsForEmail(token) {
     const emailData = emailsState.emails.find(e => e.token === token);
     if (!emailData) return;
 
+    // Get mail list container
+    const mailListContainer = document.getElementById(`mail-list-${token}`);
+
+    // Add loading indicator at the top (don't replace existing content)
+    let loadingIndicator = mailListContainer.querySelector('.mail-list-loading');
+
+    // Only show loading if there's no existing mails or if loading indicator doesn't exist
+    if (mailListContainer && !loadingIndicator) {
+        loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'mail-list-loading';
+        loadingIndicator.innerHTML = `
+            <div class="mail-list-loading-spinner"></div>
+            <div class="mail-list-loading-text">加載郵件中...</div>
+        `;
+        // Insert at the beginning of the container
+        mailListContainer.insertBefore(loadingIndicator, mailListContainer.firstChild);
+    }
+
+    // Record start time to ensure minimum loading display duration
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 800; // Minimum 800ms
+
     try {
         const response = await fetch(`${API_BASE}/api/email/${token}/mails?limit=50`);
         const data = await response.json();
+
+        // Ensure loading is shown for at least MIN_LOADING_TIME
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
+
+        if (remainingTime > 0) {
+            await new Promise(resolve => setTimeout(resolve, remainingTime));
+        }
+
+        // Remove loading indicator
+        if (loadingIndicator && loadingIndicator.parentNode) {
+            loadingIndicator.remove();
+        }
 
         if (response.ok && data.success) {
             // Clear error status if previously set
@@ -709,8 +742,7 @@ async function fetchMailsForEmail(token) {
             emailData.mails = [...emailData.mails, ...newMails];
             emailData.mailCount = data.data.total;
 
-            // Update the specific email card's mail list
-            const mailListContainer = document.getElementById(`mail-list-${token}`);
+            // Update the specific email card's mail list with actual data
             const mailboxCount = document.getElementById(`mailbox-count-${token}`);
 
             if (mailListContainer) {
@@ -734,8 +766,18 @@ async function fetchMailsForEmail(token) {
             // Re-render the card to update status badge
             renderEmailList();
         } else if (response.status === 404 && data.detail === "邮箱未找到") {
+            // Remove loading indicator
+            if (loadingIndicator && loadingIndicator.parentNode) {
+                loadingIndicator.remove();
+            }
+
             // Handle "邮箱未找到" (Email not found) error
             emailData.status = 'not_found';
+
+            // Clear loading and show error state
+            if (mailListContainer) {
+                mailListContainer.innerHTML = renderMailList(emailData);
+            }
 
             // Show alert to user
             alert(`错误：${data.detail}\n\n邮箱 ${emailData.email} 在服务器上未找到。\n可能原因：\n- 邮箱已过期\n- Token 已失效\n- 后端存储已清空`);
@@ -746,23 +788,27 @@ async function fetchMailsForEmail(token) {
     } catch (error) {
         console.error('Failed to fetch mails:', error);
 
-        // Mark email as error state
+        // Remove loading indicator
+        if (loadingIndicator && loadingIndicator.parentNode) {
+            loadingIndicator.remove();
+        }
+
+        // Mark email as error state and clear loading
         emailData.status = 'error';
+        if (mailListContainer) {
+            mailListContainer.innerHTML = renderMailList(emailData);
+        }
         renderEmailList();
     }
 }
 
 // Refresh All Emails
 async function refreshAllEmails() {
-    setLoading(refreshAllBtn, true);
-
     const promises = emailsState.emails.map(emailData =>
         fetchMailsForEmail(emailData.token)
     );
 
     await Promise.all(promises);
-
-    setLoading(refreshAllBtn, false);
     // API calls are already shown in notification box
 }
 

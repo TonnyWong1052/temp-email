@@ -154,6 +154,8 @@ docs/
 ├── EMAIL_WORKERS_SETUP.md   # Complete Cloudflare setup guide
 ├── CUSTOM_DOMAINS.md        # Custom domain configuration
 └── API.md                   # API documentation
+
+IP_ADDRESS_CONFIGURATION.md   # IP address display configuration guide
 ```
 
 ### Key Design Patterns

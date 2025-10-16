@@ -7,3 +7,12 @@ python-dotenv==1.0.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 ftfy==6.1.1
+
+# Redis 相關依賴（高流量支持）
+redis==5.0.1
+hiredis==2.3.2
+aioredis==2.0.1
+
+# 流量控制和限流
+slowapi==0.1.9
+limits==3.7.0
