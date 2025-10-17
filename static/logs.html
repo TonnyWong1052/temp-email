@@ -520,7 +520,7 @@
             font-weight: 600;
         }
 
-        /* 錯誤詳情樣式 */
+        /* 错误详情样式 */
         .log-details-toggle {
             cursor: pointer;
             color: #3b82f6;
@@ -600,6 +600,117 @@
             color: #fca5a5;
             padding: 8px;
             border-radius: 4px;
+        }
+
+        /* 服务器离线全屏提示面板 */
+        .server-offline-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 20, 25, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .server-offline-overlay.active {
+            display: flex;
+        }
+
+        .server-offline-panel {
+            background: #18181b;
+            border: 2px solid #ef4444;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(239, 68, 68, 0.3);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .server-offline-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+        }
+
+        .server-offline-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ef4444;
+            margin-bottom: 16px;
+        }
+
+        .server-offline-message {
+            font-size: 16px;
+            color: #a1a1aa;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .server-offline-details {
+            background: #0f1419;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #e4e4e7;
+            text-align: left;
+        }
+
+        .server-offline-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-reconnect {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-reconnect:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-reload {
+            background: #27272a;
+            color: #e4e4e7;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #3f3f46;
+            transition: all 0.2s;
+        }
+
+        .btn-reload:hover {
+            background: #3f3f46;
         }
     </style>
 </head>
@@ -769,7 +880,27 @@
         </div>
     </div>
 
+    <!-- 服务器离线全屏提示面板 -->
+    <div class="server-offline-overlay" id="serverOfflineOverlay">
+        <div class="server-offline-panel">
+            <div class="server-offline-icon">🔌</div>
+            <div class="server-offline-title" id="offlineTitle">服务器连接失败</div>
+            <div class="server-offline-message" id="offlineMessage">
+                无法连接到日志服务器，请检查服务器是否正在运行。
+            </div>
+            <div class="server-offline-details" id="offlineDetails">
+                <strong>详细信息:</strong><br>
+                服务器可能已离线或网络连接中断。
+            </div>
+            <div class="server-offline-actions">
+                <button class="btn-reconnect" id="btnReconnect">🔄 重新连接</button>
+                <button class="btn-reload" id="btnReloadPage">↻ 刷新页面</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ===== 连接状态管理 =====
         let eventSource = null;
         let logs = [];
         let isPaused = false;
@@ -786,6 +917,51 @@
             hideStats: true          // 隐藏统计请求
         };
 
+        // 连接状态追踪
+        let connectionState = {
+            sseRetries: 0,           // SSE 重连次数
+            maxSseRetries: 5,        // 最大 SSE 重试次数
+            statsFailures: 0,        // 统计更新连续失败次数
+            maxStatsFailures: 3,     // 最大统计失败次数
+            statsInterval: null,     // 统计更新定时器
+            isServerOffline: false   // 服务器是否离线
+        };
+
+        // ===== 工具函數: Fetch with Timeout =====
+        /**
+         * 带超时的 fetch 请求
+         * @param {string} url - 请求 URL
+         * @param {object} options - fetch 选项
+         * @param {number} timeout - 超时时间(毫秒),默认 10 秒
+         * @returns {Promise<Response>}
+         */
+        function fetchWithTimeout(url, options = {}, timeout = 10000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+            return fetch(url, {
+                ...options,
+                signal: controller.signal
+            }).then(response => {
+                clearTimeout(timeoutId);
+                return response;
+            }).catch(error => {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error(`请求超时 (${timeout}ms): ${url}`);
+                }
+                throw error;
+            });
+        }
+
+        // ===== SSE 重連延遲計算 (指數退避) =====
+        function getSseRetryDelay() {
+            // 5s, 10s, 20s, 40s, 80s
+            const baseDelay = 5000;
+            const delay = baseDelay * Math.pow(2, connectionState.sseRetries);
+            return Math.min(delay, 80000); // 最大 80 秒
+        }
+
         const logContainer = document.getElementById('logContainer');
         const emptyState = document.getElementById('emptyState');
         const statusDot = document.getElementById('statusDot');
@@ -794,11 +970,11 @@
         // 检查认证状态
         async function checkAuth() {
             try {
-                const response = await fetch('/admin/verify', {
+                const response = await fetchWithTimeout('/admin/verify', {
                     credentials: 'include'
-                });
+                }, 5000);  // 5 秒超时
                 const data = await response.json();
-                
+
                 if (!data.authenticated) {
                     // 未登录，重定向到 admin 页面
                     window.location.href = '/admin/?redirect=logs';
@@ -807,19 +983,52 @@
                 return true;
             } catch (error) {
                 console.error('认证检查失败:', error);
-                alert('认证失败，请先登录\n\n将跳转到管理页面...');
-                window.location.href = '/admin/';
+
+                // 区分超时错误和其他错误
+                if (error.message.includes('请求超时')) {
+                    showServerOfflinePanel('认证服务无响应', '无法连接到服务器,请检查服务器是否正在运行');
+                } else {
+                    alert('认证失败，请先登录\n\n将跳转到管理页面...');
+                    window.location.href = '/admin/';
+                }
                 return false;
             }
         }
 
-        // 连接 SSE
+        // 连接 SSE (带重连策略和指数退避)
         function connectSSE() {
+            // 检查是否已达到最大重试次数
+            if (connectionState.sseRetries >= connectionState.maxSseRetries) {
+                console.error('❌ SSE 连接已达到最大重试次数,停止重连');
+                connectionState.isServerOffline = true;
+                showServerOfflinePanel('日志流连接失败', `已重试 ${connectionState.sseRetries} 次,服务器可能已离线`);
+                return;
+            }
+
+            if (connectionState.sseRetries > 0) {
+                console.log(`🔄 SSE 连接尝试 ${connectionState.sseRetries + 1}/${connectionState.maxSseRetries}`);
+            }
+
             eventSource = new EventSource('/admin/logs/stream', { withCredentials: true });
 
             eventSource.onopen = () => {
-                console.log('SSE 连接已建立');
+                console.log('✅ SSE 连接已建立');
                 statusDot.classList.remove('disconnected');
+
+                // 连接成功,重置重试计数器
+                connectionState.sseRetries = 0;
+
+                // 如果之前標記為離線,現在恢復在線
+                if (connectionState.isServerOffline) {
+                    connectionState.isServerOffline = false;
+                    hideServerOfflinePanel();
+                    // 重新启动统计更新
+                    if (!connectionState.statsInterval) {
+                        connectionState.statsInterval = setInterval(updateStats, 3000);
+                    }
+                    // 重置统计失败计数器
+                    connectionState.statsFailures = 0;
+                }
             };
 
             eventSource.onmessage = (event) => {
@@ -838,22 +1047,55 @@
             };
 
             eventSource.onerror = (error) => {
-                console.error('SSE 连接错误:', error);
+                console.error('❌ SSE 连接错误:', error);
                 statusDot.classList.add('disconnected');
-                
-                // 检查是否为认证错误
-                if (eventSource.readyState === EventSource.CLOSED) {
-                    console.log('连接已关闭，可能是认证失效');
-                    // 重新检查认证
+
+                // 检查连接状态 (在关闭之前)
+                const isClosed = eventSource && eventSource.readyState === EventSource.CLOSED;
+
+                // 增加重试计数器
+                connectionState.sseRetries++;
+
+                // 关闭当前连接
+                if (eventSource) {
+                    try {
+                        eventSource.close();
+                    } catch (e) {
+                        console.warn('关闭 SSE 连接时出错:', e);
+                    }
+                    eventSource = null;
+                }
+
+                // 检查是否已达到最大重试次数
+                if (connectionState.sseRetries >= connectionState.maxSseRetries) {
+                    connectionState.isServerOffline = true;
+                    showServerOfflinePanel('日志流连接失败', `已重试 ${connectionState.sseRetries} 次,服务器可能已离线`);
+                    return;
+                }
+
+                // 使用指數退避重連
+                const retryDelay = getSseRetryDelay();
+                console.log(`🔄 将在 ${(retryDelay / 1000).toFixed(1)} 秒后重连 (第 ${connectionState.sseRetries}/${connectionState.maxSseRetries} 次)`);
+
+                // 如果连接已关闭,重新检查认证
+                if (isClosed) {
+                    console.log('⚠️ 连接已关闭，检查认证状态...');
                     checkAuth().then(isAuth => {
                         if (isAuth) {
-                            // 如果仍然认证有效，5秒後重連
-                            setTimeout(connectSSE, 5000);
+                            // 如果仍然认证有效,延遲後重連
+                            setTimeout(connectSSE, retryDelay);
+                        } else {
+                            // 认证失效,不再重连
+                            console.error('❌ 认证失效,停止重连');
+                            connectionState.isServerOffline = true;
                         }
+                    }).catch(() => {
+                        // 认证检查失败,仍尝试重连 (可能是网络问题)
+                        setTimeout(connectSSE, retryDelay);
                     });
                 } else {
-                    // 5秒後重連
-                    setTimeout(connectSSE, 5000);
+                    // 其他错误,直接重连
+                    setTimeout(connectSSE, retryDelay);
                 }
             };
         }
@@ -881,6 +1123,18 @@
 
             emptyState.style.display = 'none';
 
+            // 🔧 修復：記錄當前展開的詳情面板
+            const expandedLogs = new Set();
+            logContainer.querySelectorAll('.log-entry').forEach(entry => {
+                const detailsPanel = entry.querySelector('.log-details');
+                if (detailsPanel && detailsPanel.classList.contains('expanded')) {
+                    const logId = entry.dataset.logId;
+                    if (logId) {
+                        expandedLogs.add(logId);
+                    }
+                }
+            });
+
             // 清空并重新渲染（简单实现，可优化为增量更新）
             logContainer.querySelectorAll('.log-entry').forEach(el => el.remove());
 
@@ -892,6 +1146,20 @@
                 if (isNew) {
                     delete log._isNew;
                 }
+
+                // 🔧 修復：恢復展開狀態
+                const logId = entry.dataset.logId;
+                if (logId && expandedLogs.has(logId)) {
+                    const detailsPanel = entry.querySelector('.log-details');
+                    const toggleButton = entry.querySelector('.log-details-toggle');
+                    if (detailsPanel) {
+                        detailsPanel.classList.add('expanded');
+                    }
+                    if (toggleButton) {
+                        toggleButton.textContent = '🔼 收起';
+                    }
+                }
+
                 logContainer.appendChild(entry);
             });
 
@@ -908,11 +1176,15 @@
             const entry = document.createElement('div');
             entry.className = `log-entry ${log.level}${isNew ? ' new' : ''}`;
 
+            // 🔧 修復：為每個日誌條目生成唯一 ID（用於追蹤展開狀態）
+            const logId = `${log.timestamp}_${log.level}_${(log.message || '').substring(0, 50)}`;
+            entry.dataset.logId = logId;
+
             const timestamp = new Date(log.timestamp).toLocaleTimeString('zh-CN', { hour12: false });
             const logType = (log.type || log.log_type || log.category || '').toString();
             const ip = ((log.details && (log.details.client_ip || log.details.ip)) || log.client_ip || '').toString();
 
-            // 檢查是否為錯誤日誌（需要顯示詳情按鈕）
+            // 检查是否为错误日志（需要显示详情按钮）
             const isError = (
                 log.level === 'error' ||
                 log.level === 'warning' ||
@@ -932,14 +1204,14 @@
                 html += `<span class="log-duration">${log.duration_ms.toFixed(0)}ms</span>`;
             }
 
-            // 如果是錯誤，添加「查看詳情」按鈕
+            // 如果是错误，添加「查看详情」按钮
             if (isError) {
-                html += `<span class="log-details-toggle" onclick="toggleLogDetails(this)">🔍 詳情</span>`;
+                html += `<span class="log-details-toggle" onclick="toggleLogDetails(this)">🔍 详情</span>`;
             }
 
             entry.innerHTML = html;
 
-            // 如果是錯誤，添加詳情面板
+            // 如果是错误，添加详情面板
             if (isError) {
                 const detailsPanel = createLogDetailsPanel(log);
                 entry.appendChild(detailsPanel);
@@ -960,7 +1232,7 @@
 
             let detailsHtml = '';
 
-            // 錯誤提示
+            // 错误提示
             if (log.details && log.details.error_hint) {
                 detailsHtml += `
                     <div class="log-details-hint">
@@ -969,11 +1241,11 @@
                 `;
             }
 
-            // 錯誤信息
+            // 错误信息
             if (log.details && log.details.error) {
                 detailsHtml += `
                     <div class="log-details-section">
-                        <div class="log-details-title">❌ 錯誤信息</div>
+                        <div class="log-details-title">❌ 错误信息</div>
                         <div class="log-details-error">
                             <strong>${escapeHtml(log.details.error_type || 'Error')}</strong>: ${escapeHtml(log.details.error)}
                         </div>
@@ -981,19 +1253,19 @@
                 `;
             }
 
-            // 請求信息
+            // 请求信息
             if (log.details) {
-                // 請求 Headers
+                // 请求 Headers
                 if (log.details.request_headers) {
                     detailsHtml += `
                         <div class="log-details-section">
-                            <div class="log-details-title">📤 請求 Headers</div>
+                            <div class="log-details-title">📤 请求 Headers</div>
                             <div class="log-details-content">${escapeHtml(JSON.stringify(log.details.request_headers, null, 2))}</div>
                         </div>
                     `;
                 }
 
-                // 請求 Query 參數
+                // 请求 Query 参数
                 if (log.details.request_query && Object.keys(log.details.request_query).length > 0) {
                     detailsHtml += `
                         <div class="log-details-section">
@@ -1003,42 +1275,42 @@
                     `;
                 }
 
-                // 請求 Body
+                // 请求 Body
                 if (log.details.request_body) {
                     detailsHtml += `
                         <div class="log-details-section">
-                            <div class="log-details-title">📝 請求 Body</div>
+                            <div class="log-details-title">📝 请求 Body</div>
                             <div class="log-details-content">${escapeHtml(log.details.request_body)}</div>
                         </div>
                     `;
                 }
 
-                // 響應 Headers
+                // 响应 Headers
                 if (log.details.response_headers) {
                     detailsHtml += `
                         <div class="log-details-section">
-                            <div class="log-details-title">📥 響應 Headers</div>
+                            <div class="log-details-title">📥 响应 Headers</div>
                             <div class="log-details-content">${escapeHtml(JSON.stringify(log.details.response_headers, null, 2))}</div>
                         </div>
                     `;
                 }
 
-                // 錯誤堆棧
+                // 错误堆栈
                 if (log.details.traceback) {
                     detailsHtml += `
                         <div class="log-details-section">
-                            <div class="log-details-title">🐛 錯誤堆棧</div>
+                            <div class="log-details-title">🐛 错误堆栈</div>
                             <div class="log-details-content">${escapeHtml(log.details.traceback)}</div>
                         </div>
                     `;
                 }
             }
 
-            // 如果沒有任何詳情，顯示提示
+            // 如果没有任何详情，显示提示
             if (!detailsHtml) {
                 detailsHtml = `
                     <div class="log-details-hint">
-                        ℹ️ 沒有可用的詳細信息
+                        ℹ️ 没有可用的详细信息
                     </div>
                 `;
             }
@@ -1059,7 +1331,7 @@
                 if (detailsPanel.classList.contains('expanded')) {
                     button.textContent = '🔼 收起';
                 } else {
-                    button.textContent = '🔍 詳情';
+                    button.textContent = '🔍 详情';
                 }
             }
         }
@@ -1206,7 +1478,10 @@
         // 载入历史日志
         async function loadHistoryLogs() {
             try {
-                const response = await fetch('/admin/logs/history?limit=500', { credentials: 'include' });
+                const response = await fetchWithTimeout('/admin/logs/history?limit=500', {
+                    credentials: 'include'
+                }, 8000);  // 8 秒超时 (历史日志可能较大)
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.logs.length > 0) {
@@ -1219,78 +1494,108 @@
                 }
             } catch (error) {
                 console.error('载入历史日志失败:', error);
+                // 历史日志失败不应阻止页面使用,只记录错误
+                if (error.message.includes('请求超时')) {
+                    console.warn('⚠️ 历史日志载入超时,跳过历史数据');
+                }
             }
         }
 
         // 更新统计
-        function updateStats() {
+        async function updateStats() {
             document.getElementById('totalCount').textContent = logs.length;
 
-            // 获取订阅者数量（从后端）
-            fetch('/admin/logs/stats', { credentials: 'include' })
-                .then(async res => {
-                    const contentType = res.headers.get('content-type');
+            try {
+                // 获取订阅者数量（从后端）
+                const res = await fetchWithTimeout('/admin/logs/stats', {
+                    credentials: 'include'
+                }, 5000);  // 5 秒超时
 
-                    // 如果是 JSON 响应
-                    if (contentType && contentType.includes('application/json')) {
-                        const data = await res.json();
+                const contentType = res.headers.get('content-type');
 
-                        // HTTP 状态码成功（200-299）
-                        if (res.ok) {
-                            if (data.success) {
-                                // 正常统计
-                                document.getElementById('subscriberCount').textContent = data.stats.subscribers;
-                                document.getElementById('uniqueIpCount').textContent = data.stats.unique_ips || 0;
+                // 如果是 JSON 响应
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await res.json();
 
-                                // 清除可能的错误提示
-                                const existingError = document.getElementById('statsError');
-                                if (existingError) {
-                                    existingError.remove();
-                                }
-                            } else {
-                                // 统计服务内部错误（但 HTTP 200）
-                                console.warn('统计服务内部错误:', data);
-                                showStatsError('统计服务部分功能异常', data.error, data.message);
+                    // HTTP 状态码成功（200-299）
+                    if (res.ok) {
+                        if (data.success) {
+                            // ✅ 正常统计 - 重置失败计数器
+                            connectionState.statsFailures = 0;
+
+                            document.getElementById('subscriberCount').textContent = data.stats.subscribers;
+                            document.getElementById('uniqueIpCount').textContent = data.stats.unique_ips || 0;
+
+                            // 清除可能的错误提示
+                            const existingError = document.getElementById('statsError');
+                            if (existingError) {
+                                existingError.remove();
                             }
                         } else {
-                            // HTTP 错误状态码（4xx, 5xx）
-                            const errorMsg = data.detail || data.error || data.message || '未知错误';
-                            console.error(`统计 API 错误 (HTTP ${res.status}):`, data);
-
-                            // 提取详细错误信息
-                            let errorDetail = '';
-                            if (typeof data.detail === 'object') {
-                                errorDetail = data.detail.error_detail || data.detail.error || JSON.stringify(data.detail);
-                            } else {
-                                errorDetail = errorMsg;
-                            }
-
-                            showStatsError(
-                                `统计 API 错误 (HTTP ${res.status})`,
-                                errorDetail,
-                                `状态码: ${res.status} ${res.statusText}`
-                            );
+                            // 统计服务内部错误（但 HTTP 200）
+                            console.warn('统计服务内部错误:', data);
+                            handleStatsFailure('统计服务部分功能异常', data.error || data.message);
                         }
                     } else {
-                        // 非 JSON 响应（可能是 HTML 错误页面）
-                        const text = await res.text();
-                        console.error(`统计 API 返回非 JSON 响应 (HTTP ${res.status}):`, text.substring(0, 500));
-                        showStatsError(
+                        // HTTP 错误状态码（4xx, 5xx）
+                        const errorMsg = data.detail || data.error || data.message || '未知错误';
+                        console.error(`统计 API 错误 (HTTP ${res.status}):`, data);
+
+                        // 提取详细错误信息
+                        let errorDetail = '';
+                        if (typeof data.detail === 'object') {
+                            errorDetail = data.detail.error_detail || data.detail.error || JSON.stringify(data.detail);
+                        } else {
+                            errorDetail = errorMsg;
+                        }
+
+                        handleStatsFailure(
                             `统计 API 错误 (HTTP ${res.status})`,
-                            '服務器返回非 JSON 响应',
-                            `状态码: ${res.status} ${res.statusText}`
+                            errorDetail
                         );
                     }
-                })
-                .catch(err => {
-                    // 网络错误或其他异常
-                    console.error('获取统计失败:', err);
-                    showStatsError(
-                        '网络错误',
-                        err.message,
-                        '无法连接到统计服务，请检查网络连接'
+                } else {
+                    // 非 JSON 响应（可能是 HTML 错误页面）
+                    const text = await res.text();
+                    console.error(`统计 API 返回非 JSON 响应 (HTTP ${res.status}):`, text.substring(0, 500));
+                    handleStatsFailure(
+                        `统计 API 错误 (HTTP ${res.status})`,
+                        '服务器返回非 JSON 响应'
                     );
-                });
+                }
+            } catch (err) {
+                // 网络错误或超時
+                console.error('获取统计失败:', err);
+
+                const errorMsg = err.message.includes('请求超时')
+                    ? '统计服务请求超时'
+                    : '网络错误';
+
+                handleStatsFailure(errorMsg, err.message);
+            }
+        }
+
+        // 处理统计更新失败
+        function handleStatsFailure(title, detail) {
+            connectionState.statsFailures++;
+
+            console.warn(`⚠️ 统计失败次数: ${connectionState.statsFailures}/${connectionState.maxStatsFailures}`);
+
+            if (connectionState.statsFailures >= connectionState.maxStatsFailures) {
+                // 达到最大失败次数,停止定时更新
+                if (connectionState.statsInterval) {
+                    clearInterval(connectionState.statsInterval);
+                    connectionState.statsInterval = null;
+                    console.error('❌ 统计服务连续失败,已停止自动更新');
+                }
+
+                // 标记服务器离线并显示提示
+                connectionState.isServerOffline = true;
+                showServerOfflinePanel('统计服务无响应', detail);
+            } else {
+                // 尚未达到最大失败次数,显示警告
+                showStatsError(title, detail, `连续失败 ${connectionState.statsFailures} 次,再失败 ${connectionState.maxStatsFailures - connectionState.statsFailures} 次将停止更新`);
+            }
         }
 
         // 显示统计错误提示
@@ -1339,6 +1644,73 @@
                 }
             }
         }
+
+        // ===== 服务器离线面板控制 =====
+        const serverOfflineOverlay = document.getElementById('serverOfflineOverlay');
+
+        /**
+         * 显示服务器离线提示面板
+         * @param {string} title - 标题
+         * @param {string} details - 详细信息
+         */
+        function showServerOfflinePanel(title, details) {
+            const offlineTitle = document.getElementById('offlineTitle');
+            const offlineMessage = document.getElementById('offlineMessage');
+            const offlineDetailsEl = document.getElementById('offlineDetails');
+
+            if (offlineTitle) offlineTitle.textContent = title || '服务器连接失败';
+            if (offlineMessage) offlineMessage.textContent = '无法连接到日志服务器，请检查服务器是否正在运行。';
+            if (offlineDetailsEl) {
+                offlineDetailsEl.innerHTML = `<strong>详细信息:</strong><br>${escapeHtml(details || '服务器可能已离线或网络连接中断')}`;
+            }
+
+            serverOfflineOverlay.classList.add('active');
+            console.error('🚨 服务器离线面板已显示:', title, details);
+        }
+
+        /**
+         * 隐藏服务器离线提示面板
+         */
+        function hideServerOfflinePanel() {
+            serverOfflineOverlay.classList.remove('active');
+            console.log('✅ 服务器离线面板已隐藏');
+        }
+
+        // 绑定重新连接按钮
+        document.getElementById('btnReconnect').addEventListener('click', () => {
+            console.log('🔄 用户点击重新连接');
+            hideServerOfflinePanel();
+
+            // 重置连接状态
+            connectionState.sseRetries = 0;
+            connectionState.statsFailures = 0;
+            connectionState.isServerOffline = false;
+
+            // 关闭现有 SSE 连接
+            if (eventSource) {
+                try {
+                    eventSource.close();
+                } catch (e) {
+                    console.warn('關閉 SSE 時出錯:', e);
+                }
+                eventSource = null;
+            }
+
+            // 重新连接
+            connectSSE();
+
+            // 重新启动统计更新
+            if (!connectionState.statsInterval) {
+                connectionState.statsInterval = setInterval(updateStats, 3000);
+            }
+            updateStats();
+        });
+
+        // 绑定刷新页面按钮
+        document.getElementById('btnReloadPage').addEventListener('click', () => {
+            console.log('↻ 用户点击刷新页面');
+            window.location.reload();
+        });
 
         // 过滤器事件
         document.querySelectorAll('[data-level]').forEach(pill => {
@@ -1473,7 +1845,7 @@
                         break;
 
                     case 'recent':
-                        // 最近 5 分鐘
+                        // 最近 5 分钟
                         resetAllFilters();
                         filters.timeRange = '5m';
                         document.querySelectorAll('[data-timerange]').forEach(p => p.classList.remove('active'));
@@ -1560,10 +1932,10 @@
             if (!confirm('确定要清空所有日志吗？')) return;
 
             try {
-                const response = await fetch('/admin/logs/clear', {
+                const response = await fetchWithTimeout('/admin/logs/clear', {
                     method: 'POST',
                     credentials: 'include'
-                });
+                }, 5000);  // 5 秒超时
 
                 if (response.ok) {
                     logs = [];
@@ -1606,7 +1978,7 @@
         const ipStatsBtn = document.getElementById('ipStatsBtn');
         const closeIpStatsBtn = document.getElementById('closeIpStatsBtn');
 
-        // 國家代碼到國旗 emoji 的映射
+        // 国家代码到国旗 emoji 的映射
         function getCountryFlag(countryCode) {
             if (!countryCode || countryCode === '-') return '🏳️';
             const codePoints = countryCode
@@ -1627,7 +1999,9 @@
             `;
 
             try {
-                const response = await fetch('/admin/logs/ip-stats', { credentials: 'include' });
+                const response = await fetchWithTimeout('/admin/logs/ip-stats', {
+                    credentials: 'include'
+                }, 8000);  // 8 秒超时 (IP 统计可能需要较长时间)
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1642,10 +2016,15 @@
                 }
             } catch (error) {
                 console.error('加载 IP 统计失败:', error);
+
+                const errorMsg = error.message.includes('请求超时')
+                    ? '⏱️ IP 统计请求超时,请稍后再试'
+                    : error.message;
+
                 ipStatsModalBody.innerHTML = `
                     <div class="error-message">
                         <strong>❌ 加载失败</strong><br>
-                        ${error.message}
+                        ${errorMsg}
                     </div>
                 `;
             }
@@ -1764,6 +2143,59 @@
             }
         });
 
+        // ===== 资源清理机制 =====
+        /**
+         * 清理所有资源 (在页面卸载时调用)
+         */
+        function cleanup() {
+            console.log('🧹 开始清理资源...');
+
+            // 清理统计更新定时器
+            if (connectionState.statsInterval) {
+                clearInterval(connectionState.statsInterval);
+                connectionState.statsInterval = null;
+                console.log('✓ 统设定时器已清理');
+            }
+
+            // 关闭 SSE 连接
+            if (eventSource) {
+                try {
+                    eventSource.close();
+                    eventSource = null;
+                    console.log('✓ SSE 连接已关闭');
+                } catch (e) {
+                    console.warn('关闭 SSE 时出错:', e);
+                }
+            }
+
+            console.log('✅ 资源清理完成');
+        }
+
+        // 页面卸载时清理资源
+        window.addEventListener('beforeunload', () => {
+            cleanup();
+        });
+
+        // 页面隐藏时也清理 (适用于移动设备或标签切换)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('⏸ 页面已隐藏,清理资源');
+                cleanup();
+            } else {
+                console.log('▶️ 页面已显示,检查连接状态');
+                // 如果页面重新显示且服务器离线,不自动重连
+                if (!connectionState.isServerOffline && !eventSource) {
+                    console.log('🔄 重新连接 SSE...');
+                    connectSSE();
+                }
+                // 重新启动统计更新
+                if (!connectionState.statsInterval && !connectionState.isServerOffline) {
+                    connectionState.statsInterval = setInterval(updateStats, 3000);
+                    updateStats();
+                }
+            }
+        });
+
         // 初始化
         async function init() {
             // 先检查认证
@@ -1771,26 +2203,29 @@
             if (!isAuth) {
                 return; // 未认证，已重定向
             }
-            
+
             // 显示客户端 IP
             try {
-                const who = await fetch('/admin/whoami', { credentials: 'include' });
+                const who = await fetchWithTimeout('/admin/whoami', {
+                    credentials: 'include'
+                }, 3000);  // 3 秒超时
                 if (who.ok) {
                     const info = await who.json();
                     document.getElementById('clientIp').textContent = info.ip || '-';
                 }
             } catch (e) {
-                // ignore
+                // 客户端 IP 获取失败不影响功能
+                console.warn('⚠️ 无法获取客户端 IP:', e.message);
             }
-            
+
             // 先载入历史日志
             await loadHistoryLogs();
             // 然后连接 SSE 接收新日志
             connectSSE();
             // 更新统计
             updateStats();
-            // 每 3 秒更新一次统计
-            setInterval(updateStats, 3000);
+            // 每 3 秒更新一次统计 (保存到 connectionState)
+            connectionState.statsInterval = setInterval(updateStats, 3000);
         }
 
         // 启动

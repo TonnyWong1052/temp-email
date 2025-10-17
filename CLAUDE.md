@@ -69,20 +69,55 @@ pip install -r requirements.txt
 # - python-dotenv==1.0.0
 # - python-jose[cryptography]==3.3.0  # JWT authentication
 # - passlib[bcrypt]==1.7.4            # Password hashing
+# - redis==5.0.1                      # Redis client (high traffic support)
+# - hiredis==2.3.2                    # Redis performance optimization
+# - aioredis==2.0.1                   # Async Redis operations
+# - slowapi==0.1.9                    # Rate limiting
+# - limits==3.7.0                     # Rate limiting core
+```
+
+### Redis Setup (Optional, for High Traffic)
+
+```bash
+# Install Redis (macOS)
+brew install redis
+brew services start redis
+
+# Install Redis (Ubuntu/Debian)
+sudo apt-get install redis-server
+sudo systemctl start redis
+
+# Install Redis (Docker)
+docker run -d -p 6379:6379 redis:latest
+
+# Verify Redis is running
+redis-cli ping  # Should return "PONG"
+
+# Enable Redis in application
+# Edit .env file:
+ENABLE_REDIS=true
+REDIS_URL=redis://localhost:6379/0
 ```
 
 ### Testing
 
 ```bash
-# Run all tests
+# Run pytest test suite
 python -m pytest tests/
-
-# Run specific test files
 python -m pytest tests/test_mail_service_external_parsing.py
 python -m pytest tests/test_maileroo_integration.py
-
-# Run with verbose output
 python -m pytest -v tests/
+
+# Run standalone integration tests
+python test_kv_integration.py              # Cloudflare KV integration
+python test_custom_domains.py             # Custom domains configuration
+python test_email_api_direct.py           # Direct API connection testing
+python test_email_flow_e2e.py             # End-to-end email flow (with polling)
+python test_cloudflare_helper.py          # Cloudflare auto-detect functionality
+python test_redis_integration.py          # Redis integration testing
+python test_redis_simple.py               # Basic Redis functionality
+python test_redis_stress.py               # Redis stress testing
+python test_stats_error_handling.py       # Stats API error handling
 ```
 
 ### Docker
@@ -128,11 +163,14 @@ app/
 │   ├── code_service.py         # Verification code extraction (regex + LLM)
 │   ├── pattern_service.py      # Pattern learning and management
 │   ├── pattern_code_service.py # Pattern-based code extraction
-│   ├── llm_code_service.py     # LLM-based code extraction (OpenAI-compatible)
+│   ├── llm_code_service.py     # LLM-based code extraction (OpenAI-compatible) + Model detection
 │   ├── maileroo_service.py     # Maileroo email sending integration
 │   ├── storage_service.py      # In-memory storage with expiration cleanup
+│   ├── redis_storage_service.py # Redis-based distributed storage (high traffic)
+│   ├── redis_client.py         # Redis client with connection pooling
 │   ├── cache_service.py        # Caching service
-│   ├── cloudflare_helper.py    # Cloudflare API helper utilities
+│   ├── cache_manager.py        # Advanced cache management with TTL
+│   ├── cloudflare_helper.py    # Cloudflare API helper utilities + Auto-detect
 │   ├── html_sanitizer.py       # HTML content sanitization
 │   ├── text_to_html_service.py # Plain text to HTML conversion
 │   ├── auth_service.py         # Authentication utilities
@@ -375,6 +413,17 @@ EMAIL_TTL = 3600                    # Email expiration (seconds)
 MAIL_CHECK_INTERVAL = 5             # Polling interval (seconds)
 MAX_MAILS_PER_EMAIL = 50            # Storage limit per email
 
+# Redis Configuration (High Traffic Support)
+REDIS_URL = "redis://localhost:6379/0"  # Redis connection URL
+ENABLE_REDIS = false                # Enable Redis distributed storage
+CACHE_TTL = 30                      # Cache refresh interval (seconds)
+CACHE_MAX_SIZE = 10000              # Maximum cache entries
+RATE_LIMIT_ENABLED = true           # Enable API rate limiting
+RATE_LIMIT_PER_MINUTE = 60          # Max requests per IP per minute
+CIRCUIT_BREAKER_ENABLED = true      # Enable circuit breaker (auto-degrade on failures)
+CIRCUIT_BREAKER_THRESHOLD = 5       # Consecutive failure threshold
+CIRCUIT_BREAKER_TIMEOUT = 60        # Circuit breaker recovery time (seconds)
+
 # Mail Source Configuration (Smart Routing)
 USE_CLOUDFLARE_KV = false           # Enable Cloudflare Workers KV
 CF_KV_DOMAINS = '["example.com"]'   # Domains using KV (smart routing), empty = all domains use KV
@@ -440,6 +489,13 @@ CORS_ORIGINS = ["*"]                # Allowed origins (supports JSON array or CS
   - **配置向導 (Configuration Wizard)** - Step-by-step guide for Cloudflare setup with direct links and field highlighting
   - **測試連接 (Test Connection)** - Validates KV connection, permissions, and namespace access with detailed diagnostics
   - **智能路由配置 (Smart Routing Configuration)** - `CF_KV_DOMAINS` field for hybrid mode (⚠️ UI field added: `static/admin.html:838-850`)
+- **AI Model Auto-Detection** (⭐️ New):
+  - **🔍 自動檢測** - Automatically fetches available models from configured OpenAI-compatible API
+  - **模型列表** - Displays model dropdown with auto-complete + manual input support
+  - **兼容性** - Supports OpenAI standard `/models` endpoint and multiple response formats
+  - **Fallback** - Manual input available when API doesn't support model listing
+  - **Implementation**: `app/services/llm_code_service.py:30-180`, `app/routers/admin.py:189-252`
+  - **Documentation**: See `FEATURE_MODEL_DETECTION.md` for detailed usage guide
 
 **Runtime Configuration Feedback**:
 - Configuration fields are marked as「即時生效」(Hot-Reload) or「需重啟」(Needs Restart)
@@ -464,10 +520,11 @@ The following configuration fields are hidden from the admin interface to reduce
 - `POST /api/admin/login` - Authenticate with username/password
 - `GET /api/admin/config` - Get current configuration
 - `PUT /api/admin/config` - Update configuration (supports hot-reload)
-- `GET /api/admin/stats` - Get system statistics
+- `GET /api/admin/stats` - Get system statistics (includes Redis status when enabled)
 - `POST /admin/cloudflare/auto-detect` - Auto-detect Cloudflare credentials (⭐️ New)
 - `GET /admin/cloudflare/wizard` - Get configuration wizard steps (⭐️ New)
 - `POST /admin/cloudflare/test-connection` - Test KV connection (⭐️ New)
+- `POST /admin/llm/models` - Fetch available AI models from configured API (⭐️ New)
 
 **Configuration Hot-Reload**:
 Some settings can be updated without restarting the service:
@@ -543,9 +600,12 @@ curl -X POST http://localhost:1234/api/admin/login \
 
 ## Important Behaviors
 
-**Storage is ephemeral**: All data is lost on restart. No persistence layer.
+**Storage Modes**:
+- **In-Memory Mode** (default, `ENABLE_REDIS=false`): All data is lost on restart. No persistence layer.
+- **Redis Mode** (`ENABLE_REDIS=true`): Data persists across restarts. Supports distributed deployments with multiple service instances.
+- **Automatic Fallback**: If Redis is enabled but unavailable, service automatically falls back to in-memory storage with warning logs.
 
-**Expiration**: Emails expire after 1 hour. Cleanup runs every 5 minutes in background.
+**Expiration**: Emails expire after 1 hour (configurable via `EMAIL_TTL`). Cleanup runs every 5 minutes in background.
 
 **Deduplication happens at three levels**:
 1. Mail ID generation (stable hash based on content)
@@ -657,6 +717,126 @@ wrangler kv:key get "mail:test@example.com:1234567890" --namespace-id=YOUR_NAMES
 - **Privacy**: No email content sent to external APIs for learned patterns
 
 ## Recent Enhancements
+
+### Redis & High Traffic Support (⭐️ New)
+
+**Architecture Evolution**: The service now supports Redis-based distributed storage for high-traffic scenarios:
+
+1. **Redis Storage Service** (`app/services/redis_storage_service.py`):
+   - Distributed email and mail storage
+   - Connection pooling with `hiredis` for performance
+   - Automatic failover to in-memory storage if Redis unavailable
+   - Async operations with `aioredis`
+
+2. **Advanced Caching** (`app/services/cache_manager.py`):
+   - TTL-based cache with automatic expiration
+   - Configurable cache size limits
+   - In-memory fallback when Redis disabled
+
+3. **Rate Limiting & Circuit Breaker**:
+   - API rate limiting via `slowapi` (configurable per-IP)
+   - Circuit breaker pattern for external API calls
+   - Automatic degradation on consecutive failures
+   - Configurable thresholds and recovery timeouts
+
+**Configuration**:
+```env
+ENABLE_REDIS=true
+REDIS_URL=redis://localhost:6379/0
+CACHE_TTL=30
+CACHE_MAX_SIZE=10000
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_PER_MINUTE=60
+CIRCUIT_BREAKER_ENABLED=true
+CIRCUIT_BREAKER_THRESHOLD=5
+CIRCUIT_BREAKER_TIMEOUT=60
+```
+
+**Testing**:
+```bash
+# Test Redis integration
+python test_redis_integration.py
+python test_redis_simple.py
+python test_redis_stress.py  # Stress testing
+
+# Check Redis status
+redis-cli ping
+```
+
+**Benefits**:
+- ✅ Horizontal scaling support (multiple service instances)
+- ✅ Persistent storage across restarts (when Redis enabled)
+- ✅ Better performance under high load
+- ✅ Automatic rate limiting prevents abuse
+- ✅ Circuit breaker prevents cascading failures
+
+### AI Model Auto-Detection (⭐️ New)
+
+**Interactive Model Selection**: Admin dashboard now supports automatic detection of available AI models from OpenAI-compatible APIs:
+
+**Features**:
+1. **🔍 Auto-Detect Button** - Fetches model list from configured API endpoint
+2. **Dropdown Selection** - Model list displayed in searchable dropdown + manual input
+3. **Multiple API Formats** - Supports OpenAI, Anthropic, and custom response formats
+4. **Smart Fallback** - Manual input when API doesn't support `/models` endpoint
+
+**Usage Flow**:
+```
+1. Configure API Key + API Base URL in Admin
+2. Click "🔍 自動檢測" button
+3. System fetches models via GET {api_base}/models
+4. Select from dropdown or type custom model name
+5. Save configuration
+```
+
+**API Endpoint**:
+- `POST /admin/llm/models` - Fetch available models from configured API
+- Supports optional `openai_api_base` and `openai_api_key` parameters
+- Returns JSON: `{"success": true, "models": ["model1", "model2"], ...}`
+
+**Implementation**:
+- Backend: `app/services/llm_code_service.py:30-180` - `detect_available_models()`
+- Admin API: `app/routers/admin.py:189-252` - `/admin/llm/models` endpoint
+- Frontend: `static/admin.html:946-966` (HTML), `static/admin.html:1282-1388` (JavaScript)
+
+**Error Handling**:
+- ✅ Validates API Key and Base URL before request
+- ✅ Friendly error messages for common issues (401/403/404)
+- ✅ Timeout handling (30s default)
+- ✅ Fallback to manual input if API doesn't support model listing
+
+**Documentation**: See `FEATURE_MODEL_DETECTION.md` for comprehensive usage guide
+
+### Enhanced Cloudflare Helper
+
+**Cloudflare Auto-Detection**: The admin dashboard now includes intelligent Cloudflare configuration detection:
+
+1. **Auto-Detect Credentials** (`/admin/cloudflare/auto-detect`):
+   - Automatically finds `wrangler` command in system PATH
+   - Detects credentials from local wrangler config (`~/.wrangler/config/`)
+   - Extracts Account ID, Namespace ID from `wrangler.toml`
+   - Enhanced PATH resolution (includes `~/.npm/bin`, `~/.bun/bin`, etc.)
+
+2. **Configuration Wizard** (`/admin/cloudflare/wizard`):
+   - Step-by-step setup guide with direct Cloudflare dashboard links
+   - Field highlighting for configuration steps
+   - Progress tracking through setup process
+
+3. **Connection Testing** (`/admin/cloudflare/test-connection`):
+   - Validates KV connection with detailed diagnostics
+   - Checks API token permissions
+   - Verifies namespace accessibility
+   - Returns success/failure with actionable suggestions
+
+**Implementation**:
+- Service: `app/services/cloudflare_helper.py` - Enhanced with `_get_enhanced_env()` and auto-detect logic
+- Admin API: `app/routers/admin.py` - Three new endpoints for auto-detect, wizard, and test
+- Frontend: `static/admin.html` - Enhanced Cloudflare configuration section with智能检测 badges
+
+**Testing**:
+```bash
+python test_cloudflare_helper.py  # Test auto-detect functionality
+```
 
 ### Frontend Improvements
 - **Copy functionality fix**: Email addresses with special characters (like `@leungchushing.best`) now copy correctly without HTML entities

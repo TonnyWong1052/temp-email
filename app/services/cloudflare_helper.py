@@ -39,6 +39,15 @@ class CloudflareHelper:
             },
             {
                 "id": 2,
+                "title": "创建 API Token",
+                "description": "点击「Create Token」，选择「Custom Token」，设置以下权限：\n\n🔑 必需权限：\n• Account Settings: Read - 读取帐户信息\n• Workers KV Storage: Read - 读取 KV 数据\n\n🔍 域名检查功能（可选）：\n• Zone: Read - 读取域名列表\n• Email Routing Rules: Read - 读取 Email Routing 配置\n\n添加这些权限后，系统将能够自动检测您的域名并验证 Email Routing 配置状态。",
+                "url": "https://dash.cloudflare.com/profile/api-tokens",
+                "hint": "复制生成的 Token 到下方「API Token」栏位（只显示一次，请妥善保存）",
+                "field_id": "cfApiToken",
+                "icon": "🔑"
+            },
+            {
+                "id": 3,
                 "title": "创建 KV Namespace",
                 "description": "进入 Workers & Pages → KV，点击「Create namespace」按钮，输入名称（如 EMAIL_STORAGE）",
                 "url": "https://dash.cloudflare.com/?to=/:account/workers/kv/namespaces",
@@ -47,19 +56,9 @@ class CloudflareHelper:
                 "icon": "📦"
             },
             {
-                "id": 3,
-                "title": "创建 API Token",
-                "description": "点击「Create Token」，选择「Custom Token」，设置以下权限：\n• Account Settings: Read\n• Workers KV Storage: Read",
-                "url": "https://dash.cloudflare.com/profile/api-tokens",
-                "hint": "复制生成的 Token 到下方「API Token」栏位（只显示一次，请妥善保存）",
-                "field_id": "cfApiToken",
-                "icon": "🔑"
-            },
-            {
                 "id": 4,
                 "title": "检查部署环境",
                 "description": "确保已安装 Node.js (v18+) 和 npm:\n\n• 检查命令: node -v && npm -v\n• 如未安装，请访问 nodejs.org 下载",
-                "url": "https://nodejs.org/",
                 "hint": "部署脚本需要 Node.js 环境来运行 Wrangler CLI",
                 "field_id": None,
                 "icon": "🔧",
@@ -72,8 +71,7 @@ class CloudflareHelper:
                 "url": "https://github.com/TonnyWong1052/temp-email",
                 "hint": "首次运行会打开浏览器进行 Cloudflare 授权，请确保已登录 Cloudflare 账户。部署完成后会自动生成 wrangler.toml 配置。",
                 "field_id": None,
-                "icon": "🚀",
-                "command": "git clone https://github.com/TonnyWong1052/temp-email.git && cd temp-email/workers && ./deploy.sh"
+                "icon": "🚀"
             },
             {
                 "id": 6,
@@ -225,8 +223,95 @@ class CloudflareHelper:
             }
 
     @staticmethod
+    async def _get_token_accounts(api_token: str) -> List[str]:
+        """
+        获取 Token 有权访问的所有 Account ID
+
+        Args:
+            api_token: Cloudflare API Token
+
+        Returns:
+            Account ID 列表（如果失败返回空列表）
+        """
+        try:
+            url = "https://api.cloudflare.com/client/v4/accounts"
+            headers = {"Authorization": f"Bearer {api_token}"}
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=headers, params={"per_page": 50})
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success"):
+                        accounts = data.get("result", [])
+                        return [acc.get("id") for acc in accounts if acc.get("id")]
+
+            return []
+
+        except Exception as e:
+            await log_service.log(
+                level=LogLevel.WARNING,
+                log_type=LogType.SYSTEM,
+                message=f"获取 Token Accounts 失败: {str(e)}",
+                details={"error": str(e)}
+            )
+            return []
+
+    @staticmethod
+    async def _get_namespace_account(namespace_id: str, api_token: str) -> Optional[str]:
+        """
+        获取 Namespace 实际所属的 Account ID（通过搜索所有可访问的 Accounts）
+
+        Args:
+            namespace_id: KV Namespace ID
+            api_token: Cloudflare API Token
+
+        Returns:
+            Account ID（如果找到），否则返回 None
+        """
+        try:
+            # 先获取所有可访问的 Accounts
+            token_accounts = await CloudflareHelper._get_token_accounts(api_token)
+
+            if not token_accounts:
+                return None
+
+            # 在每个 Account 中搜索此 Namespace
+            for account_id in token_accounts:
+                try:
+                    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/storage/kv/namespaces"
+                    headers = {"Authorization": f"Bearer {api_token}"}
+
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        response = await client.get(url, headers=headers, params={"per_page": 100})
+
+                        if response.status_code == 200:
+                            data = response.json()
+                            if data.get("success"):
+                                namespaces = data.get("result", [])
+                                # 检查是否包含目标 Namespace
+                                for ns in namespaces:
+                                    if ns.get("id") == namespace_id:
+                                        return account_id
+
+                except Exception as e:
+                    # 跳过无法访问的 Account
+                    continue
+
+            return None
+
+        except Exception as e:
+            await log_service.log(
+                level=LogLevel.WARNING,
+                log_type=LogType.SYSTEM,
+                message=f"搜索 Namespace Account 失败: {str(e)}",
+                details={"namespace_id": namespace_id, "error": str(e)}
+            )
+            return None
+
+    @staticmethod
     async def _verify_account(account_id: str, api_token: str) -> Dict[str, Any]:
-        """验证 Account ID 是否正确"""
+        """验证 Account ID 是否正确（增强版：检测 Token 可访问的 Accounts）"""
         try:
             url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/storage/kv/namespaces"
             headers = {"Authorization": f"Bearer {api_token}"}
@@ -241,7 +326,11 @@ class CloudflareHelper:
                             "name": "Account ID 验证",
                             "status": "passed",
                             "message": "Account ID 正确",
-                            "icon": "✅"
+                            "icon": "✅",
+                            "details": {
+                                "account_id": account_id,
+                                "accessible": True
+                            }
                         }
                 elif response.status_code == 403:
                     return {
@@ -251,12 +340,31 @@ class CloudflareHelper:
                         "icon": "❌"
                     }
                 elif response.status_code == 404:
-                    return {
-                        "name": "Account ID 验证",
-                        "status": "failed",
-                        "message": "Account ID 不存在，请检查是否正确",
-                        "icon": "❌"
-                    }
+                    # ⭐ 增强：检查 Token 实际能访问哪些 Accounts
+                    token_accounts = await CloudflareHelper._get_token_accounts(api_token)
+
+                    if token_accounts:
+                        accounts_preview = ", ".join([acc[:8] + "..." for acc in token_accounts[:3]])
+                        count_msg = f"（共 {len(token_accounts)} 个）" if len(token_accounts) > 3 else ""
+
+                        return {
+                            "name": "Account ID 验证",
+                            "status": "failed",
+                            "message": f"Token 无法访问此 Account ID。Token 实际可访问: {accounts_preview} {count_msg}",
+                            "icon": "❌",
+                            "details": {
+                                "requested_account": account_id,
+                                "accessible_accounts": token_accounts,
+                                "mismatch": True
+                            }
+                        }
+                    else:
+                        return {
+                            "name": "Account ID 验证",
+                            "status": "failed",
+                            "message": "Account ID 不存在或 Token 无法访问任何 Account",
+                            "icon": "❌"
+                        }
 
                 return {
                     "name": "Account ID 验证",
@@ -336,12 +444,29 @@ class CloudflareHelper:
                         "icon": "❌"
                     }
                 elif response.status_code == 404:
-                    return {
-                        "name": "KV Namespace 访问",
-                        "status": "failed",
-                        "message": "Namespace ID 不存在，请检查是否正确",
-                        "icon": "❌"
-                    }
+                    # ⭐ 增强：检查 Namespace 实际属于哪个 Account
+                    actual_account = await CloudflareHelper._get_namespace_account(namespace_id, api_token)
+
+                    if actual_account and actual_account != account_id:
+                        return {
+                            "name": "KV Namespace 访问",
+                            "status": "failed",
+                            "message": f"Namespace 属于 Account {actual_account[:8]}..., 而非当前配置的 {account_id[:8]}...",
+                            "icon": "❌",
+                            "details": {
+                                "requested_account": account_id,
+                                "actual_account": actual_account,
+                                "namespace_id": namespace_id,
+                                "mismatch": True
+                            }
+                        }
+                    else:
+                        return {
+                            "name": "KV Namespace 访问",
+                            "status": "failed",
+                            "message": "Namespace ID 不存在或无法访问",
+                            "icon": "❌"
+                        }
 
                 # 其他错误返回详细信息
                 try:
@@ -365,6 +490,520 @@ class CloudflareHelper:
                 "message": f"访问失败: {str(e)}",
                 "icon": "❌"
             }
+
+    @staticmethod
+    async def verify_config_match(
+        account_id: str,
+        namespace_id: str,
+        api_token: str
+    ) -> Dict[str, Any]:
+        """
+        综合验证三个配置项是否相互匹配
+
+        执行检查：
+        1. Token 是否能访问指定的 Account
+        2. Namespace 是否属于指定的 Account
+        3. Token 是否有权限访问此 Namespace
+
+        Args:
+            account_id: Cloudflare 账户 ID
+            namespace_id: KV Namespace ID
+            api_token: Cloudflare API Token
+
+        Returns:
+            {
+                "match": bool,  # 是否完全匹配
+                "token_accounts": List[str],  # Token 能访问的 Account 列表
+                "namespace_account": Optional[str],  # Namespace 实际所属的 Account
+                "issues": List[str],  # 不匹配的问题列表
+                "suggestions": List[str]  # 修复建议
+            }
+        """
+        result = {
+            "match": True,
+            "token_accounts": [],
+            "namespace_account": None,
+            "issues": [],
+            "suggestions": []
+        }
+
+        try:
+            # 获取 Token 可访问的 Accounts
+            token_accounts = await CloudflareHelper._get_token_accounts(api_token)
+            result["token_accounts"] = token_accounts
+
+            # 检查 Token 是否能访问指定的 Account
+            if token_accounts and account_id not in token_accounts:
+                result["match"] = False
+                result["issues"].append(
+                    f"Token 无法访问 Account {account_id[:8]}..."
+                )
+
+                accounts_preview = ", ".join([acc[:8] + "..." for acc in token_accounts[:3]])
+                count_suffix = f" (共 {len(token_accounts)} 个)" if len(token_accounts) > 3 else ""
+
+                result["suggestions"].append(
+                    f"💡 Token 实际可访问: {accounts_preview}{count_suffix}\n"
+                    f"   请确认 Account ID 是否填写正确，或使用 Token 可访问的 Account"
+                )
+
+            # 获取 Namespace 实际所属的 Account
+            namespace_account = await CloudflareHelper._get_namespace_account(namespace_id, api_token)
+            result["namespace_account"] = namespace_account
+
+            if namespace_account:
+                # 检查 Namespace 是否属于指定的 Account
+                if namespace_account != account_id:
+                    result["match"] = False
+                    result["issues"].append(
+                        f"Namespace {namespace_id[:8]}... 属于 Account {namespace_account[:8]}..., "
+                        f"而非当前配置的 {account_id[:8]}..."
+                    )
+                    result["suggestions"].append(
+                        f"💡 请将 Account ID 修改为 {namespace_account}，或选择属于 {account_id[:8]}... 的其他 Namespace"
+                    )
+
+            # 如果完全匹配
+            if result["match"]:
+                result["suggestions"].append(
+                    "✅ 所有配置项相互匹配，Cloudflare KV 已准备就绪！"
+                )
+
+            return result
+
+        except Exception as e:
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.SYSTEM,
+                message=f"配置匹配度检查异常: {str(e)}",
+                details={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e)
+                }
+            )
+
+            result["match"] = False
+            result["issues"].append(f"匹配度检查失败: {str(e)}")
+            return result
+
+    @staticmethod
+    async def list_account_zones(account_id: str, api_token: str) -> Dict[str, Any]:
+        """
+        列出 Account 下的所有域名（Zones）
+
+        Args:
+            account_id: Cloudflare 账户 ID
+            api_token: Cloudflare API Token
+
+        Returns:
+            {
+                "success": bool,
+                "zones": List[Dict],  # 域名列表
+                "count": int,  # 域名数量
+                "message": str
+            }
+        """
+        try:
+            url = "https://api.cloudflare.com/client/v4/zones"
+            headers = {"Authorization": f"Bearer {api_token}"}
+            params = {
+                "account.id": account_id,
+                "per_page": 50  # 最多返回 50 个域名
+            }
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=headers, params=params)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("success"):
+                        zones = data.get("result", [])
+                        return {
+                            "success": True,
+                            "zones": zones,
+                            "count": len(zones),
+                            "message": f"成功获取 {len(zones)} 个域名"
+                        }
+
+                return {
+                    "success": False,
+                    "zones": [],
+                    "count": 0,
+                    "message": f"获取域名失败 (HTTP {response.status_code})"
+                }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "zones": [],
+                "count": 0,
+                "message": f"获取域名异常: {str(e)}"
+            }
+
+    @staticmethod
+    async def check_email_routing_status(zone_id: str, api_token: str) -> Dict[str, Any]:
+        """
+        检查单个域名的 Email Routing 配置
+
+        Args:
+            zone_id: Cloudflare Zone ID
+            api_token: Cloudflare API Token
+
+        Returns:
+            {
+                "enabled": bool,  # Email Routing 是否启用
+                "status": str,  # 状态
+                "has_catch_all": bool,  # 是否有 Catch-All 规则
+                "worker_route": Optional[str]  # Worker 路由名称
+            }
+        """
+        try:
+            # 检查 Email Routing 是否启用
+            routing_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing"
+            headers = {"Authorization": f"Bearer {api_token}"}
+
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # 获取 Email Routing 状态
+                routing_response = await client.get(routing_url, headers=headers)
+
+                if routing_response.status_code == 200:
+                    routing_data = routing_response.json()
+                    if routing_data.get("success"):
+                        result = routing_data.get("result", {})
+                        enabled = result.get("enabled", False)
+                        status = result.get("status", "unknown")
+
+                        # 如果启用，检查 Catch-All 规则
+                        has_catch_all = False
+                        worker_route = None
+
+                        if enabled:
+                            rules_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/email/routing/rules/catch_all"
+                            rules_response = await client.get(rules_url, headers=headers)
+
+                            if rules_response.status_code == 200:
+                                rules_data = rules_response.json()
+                                if rules_data.get("success"):
+                                    catch_all = rules_data.get("result", {})
+                                    has_catch_all = catch_all.get("enabled", False)
+
+                                    # 检查是否指向 Worker
+                                    actions = catch_all.get("actions", [])
+                                    for action in actions:
+                                        if action.get("type") == "worker":
+                                            worker_route = action.get("value", [])[0] if action.get("value") else None
+
+                        return {
+                            "enabled": enabled,
+                            "status": status,
+                            "has_catch_all": has_catch_all,
+                            "worker_route": worker_route
+                        }
+
+                return {
+                    "enabled": False,
+                    "status": "unknown",
+                    "has_catch_all": False,
+                    "worker_route": None
+                }
+
+        except Exception as e:
+            return {
+                "enabled": False,
+                "status": "error",
+                "has_catch_all": False,
+                "worker_route": None,
+                "error": str(e)
+            }
+
+    @staticmethod
+    async def check_domains_with_api(
+        account_id: str,
+        api_token: str,
+        cf_kv_domains: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        综合域名检查（使用 Cloudflare API）
+
+        执行步骤：
+        1. 获取所有域名列表
+        2. 检查每个域名的 Email Routing 状态
+        3. 对比 CF_KV_DOMAINS 配置（如果存在）
+        4. 生成配置建议
+
+        Args:
+            account_id: Cloudflare 账户 ID
+            api_token: Cloudflare API Token
+            cf_kv_domains: CF_KV_DOMAINS 配置值（可选）
+
+        Returns:
+            {
+                "success": bool,
+                "cloudflare_zones": List[Dict],  # Cloudflare 实际域名
+                "configured_domains": List[str],  # CF_KV_DOMAINS 配置
+                "email_routing_status": Dict,  # Email Routing 状态
+                "suggestions": List[str],  # 配置建议
+                "message": str
+            }
+        """
+        from app.config import parse_domain_list
+
+        result = {
+            "success": False,
+            "cloudflare_zones": [],
+            "configured_domains": [],
+            "email_routing_status": {},
+            "suggestions": [],
+            "message": ""
+        }
+
+        try:
+            # 步骤 1: 获取 Cloudflare 域名列表
+            zones_result = await CloudflareHelper.list_account_zones(account_id, api_token)
+
+            if not zones_result.get("success"):
+                # ⚠️ 修复：返回权限错误而不是 "检测到 0 个域名"
+                error_msg = zones_result.get('message', '未知错误')
+                result["message"] = f"❌ 无法获取 Cloudflare 域名列表"
+                result["suggestions"].append(
+                    f"🔍 错误原因: {error_msg}"
+                )
+                result["suggestions"].append(
+                    "🔑 请检查 API Token 是否具有以下权限："
+                )
+                result["suggestions"].append(
+                    "   • Zone: Read - 读取域名列表"
+                )
+                result["suggestions"].append(
+                    "   • Email Routing Rules: Read - 读取 Email Routing 配置（可选）"
+                )
+                result["suggestions"].append(
+                    f"🆔 请确认 Account ID ({account_id[:8]}...) 是否正确"
+                )
+                return result
+
+            zones = zones_result.get("zones", [])
+            result["cloudflare_zones"] = [
+                {
+                    "name": zone.get("name"),
+                    "id": zone.get("id"),
+                    "status": zone.get("status")
+                }
+                for zone in zones
+            ]
+
+            # 步骤 2: 检查每个域名的 Email Routing 状态
+            for zone in zones:
+                zone_name = zone.get("name")
+                zone_id = zone.get("id")
+
+                routing_status = await CloudflareHelper.check_email_routing_status(zone_id, api_token)
+                result["email_routing_status"][zone_name] = routing_status
+
+            # 步骤 3: 解析 CF_KV_DOMAINS 配置
+            if cf_kv_domains:
+                configured = parse_domain_list(cf_kv_domains)
+                result["configured_domains"] = configured
+
+            # 步骤 4: 生成建议
+            cloudflare_domain_names = [z.get("name") for z in zones]
+
+            # 检查未启用 Email Routing 的域名
+            not_enabled = [
+                name for name, status in result["email_routing_status"].items()
+                if not status.get("enabled")
+            ]
+
+            if not_enabled:
+                result["suggestions"].append(
+                    f"📧 以下 {len(not_enabled)} 个域名未启用 Email Routing: {', '.join(not_enabled[:3])}"
+                )
+                result["suggestions"].append(
+                    "💡 启用方法: Cloudflare Dashboard → 域名 → Email → Email Routing → 启用"
+                )
+
+            # 检查未配置 Catch-All 的域名
+            no_catch_all = [
+                name for name, status in result["email_routing_status"].items()
+                if status.get("enabled") and not status.get("has_catch_all")
+            ]
+
+            if no_catch_all:
+                result["suggestions"].append(
+                    f"⚙️ 以下域名未配置 Catch-All 规则: {', '.join(no_catch_all[:3])}"
+                )
+                result["suggestions"].append(
+                    "🔧 配置方法: Email Routing → Routing rules → Catch-All → 发送到 Worker"
+                )
+
+            # 检查已配置 Worker 的域名
+            with_worker = [
+                name for name, status in result["email_routing_status"].items()
+                if status.get("worker_route")
+            ]
+
+            # 对比 CF_KV_DOMAINS
+            if result["configured_domains"]:
+                # 在配置中但不在 Cloudflare
+                not_in_cloudflare = [
+                    d for d in result["configured_domains"]
+                    if d not in cloudflare_domain_names
+                ]
+
+                if not_in_cloudflare:
+                    result["suggestions"].append(
+                        f"⚠️ CF_KV_DOMAINS 中有 {len(not_in_cloudflare)} 个域名不在 Cloudflare 账户中: {', '.join(not_in_cloudflare)}"
+                    )
+
+                # 在 Cloudflare 但不在配置中（且已启用 Email Routing）
+                enabled_not_configured = [
+                    name for name in cloudflare_domain_names
+                    if name not in result["configured_domains"]
+                    and result["email_routing_status"].get(name, {}).get("enabled")
+                ]
+
+                if enabled_not_configured:
+                    result["suggestions"].append(
+                        f"💡 建议将以下域名添加到 CF_KV_DOMAINS: {', '.join(enabled_not_configured[:3])}"
+                    )
+                    result["suggestions"].append(
+                        f"   推荐配置: {json.dumps(result['configured_domains'] + enabled_not_configured[:3], ensure_ascii=False)}"
+                    )
+            else:
+                # 没有配置 CF_KV_DOMAINS，建议配置
+                if with_worker:
+                    result["suggestions"].append(
+                        f"💡 检测到 {len(with_worker)} 个域名已配置 Worker，建议添加到 CF_KV_DOMAINS:"
+                    )
+                    result["suggestions"].append(
+                        f"   推荐配置: {json.dumps(with_worker, ensure_ascii=False)}"
+                    )
+
+            # 成功消息
+            enabled_count = len([s for s in result["email_routing_status"].values() if s.get("enabled")])
+            result["success"] = True
+            result["message"] = f"✅ 检测到 {len(zones)} 个域名，其中 {enabled_count} 个已启用 Email Routing"
+
+            return result
+
+        except Exception as e:
+            result["message"] = f"❌ 域名检查异常: {str(e)}"
+            result["suggestions"].append("🔧 请检查网络连接和 API 权限")
+            return result
+
+    @staticmethod
+    def check_domains_config(cf_kv_domains: Optional[str]) -> Dict[str, Any]:
+        """
+        检查自定义域名配置 (CF_KV_DOMAINS)
+
+        Args:
+            cf_kv_domains: CF_KV_DOMAINS 配置值 (JSON 字符串)
+
+        Returns:
+            {
+                "configured": bool,  # 是否已配置
+                "domains": List[str],  # 域名列表
+                "count": int,  # 域名数量
+                "routing_mode": str,  # 路由模式
+                "status": str,  # 状态 (ok, warning, error)
+                "message": str,  # 状态消息
+                "suggestions": List[str]  # 配置建议
+            }
+        """
+        import json
+        from app.config import get_active_domains, parse_domain_list
+
+        result = {
+            "configured": False,
+            "domains": [],
+            "count": 0,
+            "routing_mode": "unknown",
+            "status": "ok",
+            "message": "",
+            "suggestions": []
+        }
+
+        try:
+            # 检查是否已配置 CF_KV_DOMAINS
+            if not cf_kv_domains or not cf_kv_domains.strip():
+                result["routing_mode"] = "all_kv"
+                result["status"] = "warning"
+                result["message"] = "⚠️ CF_KV_DOMAINS 未配置，所有域名将使用 Cloudflare KV"
+                result["suggestions"].append(
+                    "💡 如果您只想让部分域名使用 KV，请配置 CF_KV_DOMAINS（JSON 格式）"
+                )
+                result["suggestions"].append(
+                    "📖 例如: [\"example.com\", \"yourdomain.com\"]"
+                )
+                return result
+
+            # 解析域名列表
+            domains = parse_domain_list(cf_kv_domains)
+
+            if not domains:
+                result["routing_mode"] = "parse_error"
+                result["status"] = "error"
+                result["message"] = "❌ CF_KV_DOMAINS 格式错误，无法解析域名列表"
+                result["suggestions"].append(
+                    "🔧 请检查 JSON 格式是否正确，例如: [\"example.com\"]"
+                )
+                return result
+
+            # 配置成功解析
+            result["configured"] = True
+            result["domains"] = domains
+            result["count"] = len(domains)
+            result["routing_mode"] = "smart_routing"
+            result["status"] = "ok"
+
+            # 获取所有活跃域名
+            active_domains = get_active_domains()
+
+            # 检查域名有效性
+            invalid_domains = []
+            for domain in domains:
+                # 简单的域名格式验证
+                if not domain or "." not in domain:
+                    invalid_domains.append(domain)
+
+            if invalid_domains:
+                result["status"] = "warning"
+                result["message"] = f"⚠️ 检测到 {len(invalid_domains)} 个无效域名格式"
+                result["suggestions"].append(
+                    f"🔍 请检查以下域名格式: {', '.join(invalid_domains)}"
+                )
+
+            # 检查是否有域名不在活跃域名列表中
+            not_in_active = [d for d in domains if d not in active_domains]
+            if not_in_active:
+                result["status"] = "warning"
+                result["message"] = f"⚠️ {len(not_in_active)} 个域名未在自定义域名列表中"
+                result["suggestions"].append(
+                    f"📋 这些域名可能需要添加到 CUSTOM_DOMAINS: {', '.join(not_in_active[:3])}"
+                )
+
+            # 成功配置的消息
+            if result["status"] == "ok":
+                result["message"] = f"✅ 已配置 {len(domains)} 个域名使用 Cloudflare KV"
+                result["suggestions"].append(
+                    "💡 这些域名的邮件将通过 Cloudflare Workers KV 接收"
+                )
+                result["suggestions"].append(
+                    "📧 其他域名将使用外部 API (mail.chatgpt.org.uk) 接收邮件"
+                )
+                result["suggestions"].append(
+                    "🔗 配置 Email Routing: https://dash.cloudflare.com → 选择域名 → Email → Email Routing"
+                )
+
+            return result
+
+        except Exception as e:
+            result["status"] = "error"
+            result["message"] = f"❌ 检查域名配置时发生错误: {str(e)}"
+            result["suggestions"].append(
+                "🔧 请检查配置格式并重试"
+            )
+            return result
 
     @staticmethod
     async def auto_detect_wrangler() -> Dict[str, Any]:
@@ -627,12 +1266,142 @@ class CloudflareHelper:
         return "\n".join(lines) + "\n"
 
     @staticmethod
+    def _get_enhanced_env() -> dict:
+        """
+        获取增强的环境变量（跨平台支持，确保能找到 Node.js 工具）
+
+        支持平台：
+        - macOS (Intel & Apple Silicon)
+        - Linux
+        - Windows
+
+        Returns:
+            增强后的环境变量字典
+        """
+        import os
+        import sys
+        import glob
+        from pathlib import Path
+
+        # 复制当前环境变量
+        env = os.environ.copy()
+
+        # 获取当前 PATH 和平台
+        current_path = env.get("PATH", "")
+        is_windows = sys.platform == "win32"
+        is_macos = sys.platform == "darwin"
+        path_separator = os.pathsep  # ':' on Unix, ';' on Windows
+
+        additional_paths = []
+        home = str(Path.home())
+
+        if is_windows:
+            # ==================== Windows 平台 ====================
+            # 1. NVM for Windows
+            nvm_home = env.get("NVM_HOME")
+            if nvm_home and os.path.exists(nvm_home):
+                additional_paths.append(nvm_home)
+
+            # NVM 默认路径
+            nvm_default = os.path.join(home, "AppData", "Roaming", "nvm")
+            if os.path.exists(nvm_default):
+                # 找到所有版本
+                for version_dir in sorted(glob.glob(os.path.join(nvm_default, "v*")), reverse=True)[:3]:
+                    additional_paths.append(version_dir)
+
+            # 2. Node.js 默认安装路径
+            program_files = env.get("ProgramFiles", "C:\\Program Files")
+            program_files_x86 = env.get("ProgramFiles(x86)", "C:\\Program Files (x86)")
+            additional_paths.extend([
+                os.path.join(program_files, "nodejs"),
+                os.path.join(program_files_x86, "nodejs"),
+            ])
+
+            # 3. npm 全局路径
+            appdata = env.get("APPDATA", os.path.join(home, "AppData", "Roaming"))
+            additional_paths.append(os.path.join(appdata, "npm"))
+
+            # 4. Chocolatey
+            chocolatey = env.get("ChocolateyInstall", "C:\\ProgramData\\chocolatey")
+            additional_paths.append(os.path.join(chocolatey, "bin"))
+
+            # 5. pnpm
+            additional_paths.extend([
+                os.path.join(appdata, "pnpm"),
+                os.path.join(home, ".pnpm"),
+            ])
+
+            # 6. Volta
+            volta_home = env.get("VOLTA_HOME", os.path.join(home, ".volta"))
+            additional_paths.append(os.path.join(volta_home, "bin"))
+
+        else:
+            # ==================== Unix/macOS/Linux 平台 ====================
+            # 1. NVM 路径（动态检测最新版本）
+            nvm_base = os.path.join(home, ".nvm", "versions", "node")
+            if os.path.exists(nvm_base):
+                # 找到所有版本，按版本号排序（使用最新的 3 个版本）
+                nvm_versions = sorted(glob.glob(os.path.join(nvm_base, "v*", "bin")), reverse=True)
+                additional_paths.extend(nvm_versions[:3])
+
+            # 2. Homebrew（macOS）
+            if is_macos:
+                additional_paths.extend([
+                    "/opt/homebrew/bin",              # Apple Silicon
+                    "/opt/homebrew/sbin",
+                    "/usr/local/bin",                 # Intel Mac
+                    "/usr/local/sbin",
+                ])
+
+            # 3. Linux 系统路径
+            additional_paths.extend([
+                "/usr/bin",
+                "/usr/local/bin",
+            ])
+
+            # 4. pnpm
+            additional_paths.extend([
+                os.path.join(home, "Library", "pnpm") if is_macos else None,  # macOS
+                os.path.join(home, ".local", "share", "pnpm"),  # Linux
+            ])
+
+            # 5. Volta
+            additional_paths.append(os.path.join(home, ".volta", "bin"))
+
+            # 6. 全局 npm
+            additional_paths.extend([
+                "/usr/local/lib/node_modules/.bin",
+                os.path.join(home, ".npm-global", "bin"),
+            ])
+
+            # 7. Bun
+            additional_paths.append(os.path.join(home, ".bun", "bin"))
+
+            # 8. fnm (Fast Node Manager)
+            additional_paths.append(os.path.join(home, ".fnm"))
+
+        # 过滤出实际存在的路径（移除 None 和不存在的路径）
+        existing_paths = [p for p in additional_paths if p and os.path.exists(p)]
+
+        # 合并路径（去重，保持顺序）
+        all_paths = existing_paths + current_path.split(path_separator)
+        unique_paths = []
+        seen = set()
+        for p in all_paths:
+            if p and p not in seen:
+                unique_paths.append(p)
+                seen.add(p)
+
+        env["PATH"] = path_separator.join(unique_paths)
+        return env
+
+    @staticmethod
     async def _run_command(
         command: List[str],
         timeout: int = 10
     ) -> Tuple[bool, str]:
         """
-        执行 Shell 命令
+        执行 Shell 命令（使用增强的环境变量）
 
         Args:
             command: 命令和参数列表
@@ -642,10 +1411,26 @@ class CloudflareHelper:
             (是否成功, 输出内容)
         """
         try:
+            # 获取增强的环境变量
+            env = CloudflareHelper._get_enhanced_env()
+
+            # 记录调试信息
+            await log_service.log(
+                level=LogLevel.DEBUG,
+                log_type=LogType.SYSTEM,
+                message=f"执行命令: {' '.join(command)}",
+                details={
+                    "command": command,
+                    "path_preview": env.get("PATH", "")[:200] + "...",
+                    "timeout": timeout
+                }
+            )
+
             process = await asyncio.create_subprocess_exec(
                 *command,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env  # ⭐ 使用增强的环境变量
             )
 
             stdout, stderr = await asyncio.wait_for(
@@ -654,14 +1439,49 @@ class CloudflareHelper:
             )
 
             if process.returncode == 0:
-                return (True, stdout.decode("utf-8"))
+                output = stdout.decode("utf-8")
+                await log_service.log(
+                    level=LogLevel.DEBUG,
+                    log_type=LogType.SYSTEM,
+                    message=f"命令执行成功: {command[0]}",
+                    details={"output_length": len(output)}
+                )
+                return (True, output)
             else:
-                return (False, stderr.decode("utf-8"))
+                error = stderr.decode("utf-8")
+                await log_service.log(
+                    level=LogLevel.WARNING,
+                    log_type=LogType.SYSTEM,
+                    message=f"命令执行失败: {command[0]}",
+                    details={
+                        "returncode": process.returncode,
+                        "stderr": error[:500]
+                    }
+                )
+                return (False, error)
 
         except asyncio.TimeoutError:
-            return (False, f"命令执行超时 ({timeout}s)")
+            error_msg = f"命令执行超时 ({timeout}s)"
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.SYSTEM,
+                message=error_msg,
+                details={"command": command}
+            )
+            return (False, error_msg)
         except Exception as e:
-            return (False, f"命令执行失败: {str(e)}")
+            error_msg = f"命令执行失败: {str(e)}"
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.SYSTEM,
+                message=error_msg,
+                details={
+                    "command": command,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e)
+                }
+            )
+            return (False, error_msg)
 
 
 # 单例实例

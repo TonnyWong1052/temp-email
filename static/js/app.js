@@ -146,7 +146,6 @@ const closeModal = document.getElementById('closeModal');
 // Stats Elements
 const statEmailCount = document.getElementById('statEmailCount');
 const statTotalMails = document.getElementById('statTotalMails');
-const statReadMails = document.getElementById('statReadMails');
 
 // Terminal Elements
 const terminalOutput = document.getElementById('terminalOutput');
@@ -1576,7 +1575,6 @@ function updateStats() {
 
     statEmailCount.textContent = emailsState.emails.length;
     statTotalMails.textContent = totalMails;
-    statReadMails.textContent = 0; // Placeholder - would need read tracking
 }
 
 // Format Expires Time

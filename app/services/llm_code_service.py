@@ -27,6 +27,158 @@ class LLMCodeService:
         from app.services.code_service import code_service
         self.fallback_service = code_service
 
+    async def get_available_models(self, api_base: str = None, api_key: str = None) -> dict:
+        """
+        從 API 端點獲取可用的模型列表
+
+        Args:
+            api_base: API 基礎 URL（可選，默認使用配置中的值）
+            api_key: API 密鑰（可選，默認使用配置中的值）
+
+        Returns:
+            {
+                "success": bool,
+                "models": List[str],  # 模型 ID 列表
+                "message": str,
+                "source": str  # "api" 或 "error"
+            }
+        """
+        base_url = (api_base or self.api_base).rstrip('/')
+        key = api_key or self.api_key
+
+        if not key:
+            return {
+                "success": False,
+                "models": [],
+                "message": "未配置 API Key",
+                "source": "error"
+            }
+
+        try:
+            await log_service.log(
+                level=LogLevel.INFO,
+                log_type=LogType.LLM_CALL,
+                message=f"正在獲取模型列表",
+                details={
+                    "api_base": base_url
+                }
+            )
+
+            # 嘗試調用 /v1/models 端點（OpenAI 標準）
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    f"{base_url}/models",
+                    headers={
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json",
+                    }
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+
+                    # 解析模型列表（支持多種格式）
+                    models = []
+                    if isinstance(data, dict):
+                        # OpenAI 格式：{"data": [{"id": "gpt-3.5-turbo"}, ...], "object": "list"}
+                        if "data" in data and isinstance(data["data"], list):
+                            models = [
+                                item["id"] if isinstance(item, dict) and "id" in item else str(item)
+                                for item in data["data"]
+                            ]
+                        # 簡單格式：{"models": ["model1", "model2"]}
+                        elif "models" in data and isinstance(data["models"], list):
+                            models = data["models"]
+                        # 其他可能的格式
+                        elif "model_list" in data and isinstance(data["model_list"], list):
+                            models = data["model_list"]
+                    # 直接返回列表
+                    elif isinstance(data, list):
+                        models = [
+                            item["id"] if isinstance(item, dict) and "id" in item else str(item)
+                            for item in data
+                        ]
+
+                    # 過濾和排序
+                    models = [m for m in models if m and isinstance(m, str)]
+                    models.sort()
+
+                    await log_service.log(
+                        level=LogLevel.SUCCESS,
+                        log_type=LogType.LLM_CALL,
+                        message=f"成功獲取 {len(models)} 個模型",
+                        details={
+                            "api_base": base_url,
+                            "models_count": len(models)
+                        }
+                    )
+
+                    return {
+                        "success": True,
+                        "models": models,
+                        "message": f"成功獲取 {len(models)} 個模型",
+                        "source": "api"
+                    }
+                else:
+                    error_msg = f"API 返回错误: {response.status_code}"
+
+                    await log_service.log(
+                        level=LogLevel.WARNING,
+                        log_type=LogType.LLM_CALL,
+                        message=error_msg,
+                        details={
+                            "status_code": response.status_code,
+                            "response_text": response.text[:500],
+                            "api_base": base_url
+                        }
+                    )
+
+                    return {
+                        "success": False,
+                        "models": [],
+                        "message": error_msg,
+                        "source": "error"
+                    }
+
+        except httpx.TimeoutException:
+            error_msg = "獲取模型列表超時（10秒）"
+            await log_service.log(
+                level=LogLevel.WARNING,
+                log_type=LogType.LLM_CALL,
+                message=error_msg,
+                details={
+                    "api_base": base_url,
+                    "timeout_seconds": 10.0
+                }
+            )
+
+            return {
+                "success": False,
+                "models": [],
+                "message": error_msg,
+                "source": "error"
+            }
+
+        except Exception as e:
+            error_msg = f"獲取模型列表失敗: {str(e)}"
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.LLM_CALL,
+                message=error_msg,
+                details={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "api_base": base_url
+                }
+            )
+
+            return {
+                "success": False,
+                "models": [],
+                "message": error_msg,
+                "source": "error"
+            }
+
     async def extract_codes(self, text: str) -> List[Code]:
         """
         從文本中提取驗證碼

@@ -186,6 +186,72 @@ async def update_llm_config(
         raise HTTPException(status_code=500, detail=f"配置更新失敗: {str(e)}")
 
 
+class LLMModelsRequest(BaseModel):
+    """獲取 LLM 模型列表請求"""
+    openai_api_base: Optional[str] = None
+    openai_api_key: Optional[str] = None
+
+
+@router.post("/llm/models")
+async def get_llm_models(
+    request: LLMModelsRequest,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    獲取 LLM API 提供的模型列表
+    需要登入
+
+    Args:
+        request: 包含 API Base 和 API Key（可選，優先使用請求參數，否則使用配置）
+
+    Returns:
+        {
+            "success": bool,
+            "models": List[str],  # 模型 ID 列表
+            "message": str,
+            "source": str  # "api" 或 "error"
+        }
+    """
+    try:
+        from app.services.llm_code_service import llm_code_service
+
+        # 優先使用請求參數，否則使用當前配置
+        api_base = request.openai_api_base or settings.openai_api_base
+        api_key = request.openai_api_key or settings.openai_api_key
+
+        if not api_key:
+            return {
+                "success": False,
+                "models": [],
+                "message": "請先配置 OpenAI API Key",
+                "source": "error"
+            }
+
+        if not api_base:
+            return {
+                "success": False,
+                "models": [],
+                "message": "請先配置 API Base URL",
+                "source": "error"
+            }
+
+        # 調用服務獲取模型列表
+        result = await llm_code_service.get_available_models(
+            api_base=api_base,
+            api_key=api_key
+        )
+
+        return result
+
+    except Exception as e:
+        return {
+            "success": False,
+            "models": [],
+            "message": f"獲取模型列表失敗: {str(e)}",
+            "source": "error"
+        }
+
+
 @router.get("/verify")
 async def verify_session_endpoint(current_user: str = Depends(get_current_user)):
     """驗證 JWT 是否有效"""
@@ -523,13 +589,32 @@ def _update_runtime_settings(updates: dict):
     except ImportError:
         pass  # KV 服務可能不存在
 
-    # 重新計算活躍域名列表 (新增)
-    # 更新 config 模組中的 EMAIL_DOMAINS 全局變量
+    # 重新計算活躍域名列表 (enhanced)
     try:
         import app.config as config_module
+
+        # 保存舊的域名列表以便比較
+        old_domains = config_module.EMAIL_DOMAINS.copy() if hasattr(config_module, 'EMAIL_DOMAINS') else []
+
+        # 強制刷新域名列表(考慮 Cloudflare KV 域名)
         config_module.EMAIL_DOMAINS = config_module.get_active_domains()
-    except Exception:
-        pass
+
+        # Log domain changes for debugging
+        new_domains = config_module.EMAIL_DOMAINS
+        added = set(new_domains) - set(old_domains)
+        removed = set(old_domains) - set(new_domains)
+
+        if added or removed:
+            print(f"✅ Domain list updated:")
+            print(f"   Total domains: {len(new_domains)}")
+            if added:
+                print(f"   Added: {added}")
+            if removed:
+                print(f"   Removed: {removed}")
+        else:
+            print(f"ℹ️  Domain list unchanged ({len(new_domains)} domains)")
+    except Exception as e:
+        print(f"⚠️ Warning: Failed to refresh domain list: {e}")
 
 
 # ==================== 日誌管理 API ====================
@@ -648,7 +733,7 @@ async def get_log_stats(current_user: str = Depends(get_current_user)):
                 "success": False,
                 "stats": stats,
                 "error": stats['error'],
-                "message": f"統計服務部分功能異常: {stats['error']}"
+                "message": f"统计服务部分功能异常: {stats['error']}"
             }
 
         # 正常情況
@@ -809,7 +894,7 @@ async def get_ip_statistics(current_user: str = Depends(get_current_user)):
                     for ip in batch:
                         geo_data.append({
                             "ip": ip,
-                            "country": "查詢異常",
+                            "country": "查询异常",
                             "country_code": "-",
                             "region": "-",
                             "city": "-",
@@ -925,11 +1010,57 @@ async def download_log_file(
 # ==================== Cloudflare 配置辅助 API ====================
 
 
+# ==================== 輔助函數：配置來源檢測 ====================
+
+from typing import Tuple
+
+async def _get_config_value(
+    request_value: Optional[str],
+    env_key: str,
+    settings_value: Optional[str]
+) -> Tuple[Optional[str], str]:
+    """
+    獲取配置值並追蹤來源
+
+    優先級：
+    1. 請求參數（前端輸入框）
+    2. .env 文件
+    3. 環境變數（settings）
+
+    Args:
+        request_value: 請求參數值（前端輸入框）
+        env_key: 環境變數鍵名（大寫）
+        settings_value: settings 中的值（已從環境變數載入）
+
+    Returns:
+        (配置值, 來源標記)
+        來源標記: "input_box" | "env_file" | "environment_variable" | "not_found"
+    """
+    # 1. 優先使用請求參數（前端輸入框）
+    if request_value and request_value.strip():
+        return (request_value, "input_box")
+
+    # 2. 檢查 .env 文件
+    try:
+        env_data = env_service.read_env()
+        if env_key in env_data and env_data[env_key] and env_data[env_key].strip():
+            return (env_data[env_key], "env_file")
+    except Exception:
+        pass  # .env 讀取失敗，繼續嘗試其他來源
+
+    # 3. 使用 settings（環境變數）
+    if settings_value and settings_value.strip():
+        return (settings_value, "environment_variable")
+
+    # 4. 未找到
+    return (None, "not_found")
+
+
 class CloudflareTestRequest(BaseModel):
-    """Cloudflare 连接测试请求"""
-    cf_account_id: str
-    cf_kv_namespace_id: str
-    cf_api_token: str
+    """Cloudflare 连接测试请求（所有字段可選）"""
+    cf_account_id: Optional[str] = None
+    cf_kv_namespace_id: Optional[str] = None
+    cf_api_token: Optional[str] = None
 
 
 class EnsureNamespaceRequest(BaseModel):
@@ -1206,22 +1337,276 @@ async def check_deploy_status(current_user: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"检查部署状态失败: {str(e)}")
 
 
+@router.post("/cloudflare/test-and-check-stream")
+async def test_and_check_stream(
+    request: Optional[CloudflareTestRequest] = None,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    流式检查：逐步执行并实时推送结果 (SSE)
+    需要登录
+
+    使用 Server-Sent Events (SSE) 实现流式响应，
+    每个检查阶段完成后立即推送结果给前端。
+    """
+    import json
+
+    async def event_generator():
+        try:
+            # ========== 步骤 0: 初始化 ==========
+            data = {"stage": "init", "message": "🚀 开始检查...", "progress": 0}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+            await asyncio.sleep(0.1)
+
+            # 收集配置值
+            account_id, account_id_source = await _get_config_value(
+                request.cf_account_id if request else None,
+                "CF_ACCOUNT_ID",
+                settings.cf_account_id
+            )
+
+            namespace_id, namespace_id_source = await _get_config_value(
+                request.cf_kv_namespace_id if request else None,
+                "CF_KV_NAMESPACE_ID",
+                settings.cf_kv_namespace_id
+            )
+
+            api_token, api_token_source = await _get_config_value(
+                request.cf_api_token if request else None,
+                "CF_API_TOKEN",
+                settings.cf_api_token
+            )
+
+            # 检查配置完整性
+            missing_items = []
+            if not account_id or not account_id.strip():
+                missing_items.append("CF_ACCOUNT_ID")
+            if not namespace_id or not namespace_id.strip():
+                missing_items.append("CF_KV_NAMESPACE_ID")
+            if not api_token or not api_token.strip():
+                missing_items.append("CF_API_TOKEN")
+
+            if missing_items:
+                missing_str = ", ".join(missing_items)
+                data = {
+                    "stage": "error",
+                    "message": f"❌ 配置不完整，缺少：{missing_str}",
+                    "missing": missing_items,
+                    "progress": 0
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                return
+
+            # ========== 步骤 1: 验证 API Token ==========
+            data = {"stage": "token", "message": "🔑 验证 API Token...", "progress": 20}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            token_check = await cloudflare_helper._verify_token(api_token)
+
+            data = {
+                "stage": "token",
+                "status": token_check["status"],
+                "message": f"{token_check['icon']} {token_check['message']}",
+                "progress": 30,
+                "result": token_check
+            }
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            if token_check["status"] != "passed":
+                # 改为警告而非错误，继续执行后续检查
+                data = {
+                    "stage": "warning",
+                    "message": f"⚠️ Token 验证未通过，但服务可能仍然可用\n💡 提示：{token_check['message']}\n建议：先尝试使用服务，如遇实际问题再调整配置",
+                    "progress": 30,
+                    "can_continue": True,
+                    "result": token_check
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                # 不返回，继续后续检查
+
+            # ========== 步骤 2: 验证 Account ID ==========
+            data = {"stage": "account", "message": "🆔 验证 Account ID...", "progress": 40}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            account_check = await cloudflare_helper._verify_account(account_id, api_token)
+
+            data = {
+                "stage": "account",
+                "status": account_check["status"],
+                "message": f"{account_check['icon']} {account_check['message']}",
+                "progress": 50,
+                "result": account_check
+            }
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            if account_check["status"] != "passed":
+                # 改为警告而非错误，继续执行后续检查
+                data = {
+                    "stage": "warning",
+                    "message": f"⚠️ Account 验证未通过，但服务可能仍然可用\n💡 提示：{account_check['message']}\n建议：先尝试使用服务，如遇实际问题再调整配置",
+                    "progress": 50,
+                    "can_continue": True,
+                    "result": account_check
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                # 不返回，继续后续检查
+
+            # ========== 步骤 3: 验证 Namespace ID ==========
+            data = {"stage": "namespace", "message": "📦 验证 KV Namespace...", "progress": 60}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            namespace_check = await cloudflare_helper._verify_namespace(account_id, namespace_id, api_token)
+
+            data = {
+                "stage": "namespace",
+                "status": namespace_check["status"],
+                "message": f"{namespace_check['icon']} {namespace_check['message']}",
+                "progress": 70,
+                "result": namespace_check
+            }
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            if namespace_check["status"] != "passed":
+                # 改为警告而非错误，继续执行后续检查
+                data = {
+                    "stage": "warning",
+                    "message": f"⚠️ Namespace 验证未通过，但服务可能仍然可用\n💡 提示：{namespace_check['message']}\n建议：先尝试使用服务，如遇实际问题再调整配置",
+                    "progress": 70,
+                    "can_continue": True,
+                    "result": namespace_check
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                # 不返回，继续后续检查
+
+            # ========== 步骤 4: 配置匹配度检查 ==========
+            data = {"stage": "match", "message": "🔗 检查配置匹配度...", "progress": 75}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            match_result = await cloudflare_helper.verify_config_match(account_id, namespace_id, api_token)
+
+            match_status = "passed" if match_result["match"] else "warning"
+            match_message = "✅ 配置匹配" if match_result["match"] else "⚠️ 配置不匹配"
+            data = {
+                "stage": "match",
+                "status": match_status,
+                "message": match_message,
+                "progress": 80,
+                "result": match_result
+            }
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            # ========== 步骤 5: 域名检查（带进度） ==========
+            data = {"stage": "domains", "message": "📧 检查域名配置...", "progress": 85}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            # 获取域名列表
+            zones_result = await cloudflare_helper.list_account_zones(account_id, api_token)
+            zones = zones_result.get("zones", [])
+
+            if zones:
+                num_zones = len(zones)
+                data = {
+                    "stage": "domains",
+                    "message": f"📋 发现 {num_zones} 个域名，开始检查...",
+                    "progress": 87
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+                # 检查所有域名的 Email Routing 状态
+                email_routing_status = {}
+
+                for i, zone in enumerate(zones[:10]):  # 限制只检查前10个域名
+                    zone_name = zone.get("name")
+                    zone_id = zone.get("id")
+
+                    # 检查单个域名
+                    routing_status = await cloudflare_helper.check_email_routing_status(zone_id, api_token)
+                    email_routing_status[zone_name] = routing_status
+
+                    # 推送进度
+                    check_count = min(len(zones), 10)
+                    current_progress = 87 + int((i + 1) / check_count * 8)  # 87-95
+                    data = {
+                        "stage": "domains",
+                        "message": f"📧 检查域名 {i+1}/{check_count}: {zone_name}",
+                        "progress": current_progress,
+                        "current_domain": zone_name,
+                        "domain_status": routing_status
+                    }
+                    yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+                # 域名检查完成
+                check_count = min(len(zones), 10)
+                data = {
+                    "stage": "domains",
+                    "status": "passed",
+                    "message": f"✅ 域名检查完成 ({check_count} 个)",
+                    "progress": 95,
+                    "result": {"email_routing_status": email_routing_status, "total_zones": len(zones)}
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+            else:
+                data = {
+                    "stage": "domains",
+                    "status": "warning",
+                    "message": "⚠️ 未检测到域名或无权限访问",
+                    "progress": 95
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+            # ========== 完成 ==========
+            data = {"stage": "done", "message": "🎉 所有检查完成！", "progress": 100, "success": True}
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+        except Exception as e:
+            error_msg = str(e)
+            data = {
+                "stage": "error",
+                "message": f"⚠️ 检查过程中遇到错误: {error_msg}\n\n💡 但这不意味着服务无法工作！\n建议：先尝试使用服务，如遇实际问题再返回此处调整配置。",
+                "error": error_msg,
+                "can_continue": True
+            }
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
 @router.post("/cloudflare/test-and-check")
-async def test_and_check_cloudflare(current_user: str = Depends(get_current_user)):
+async def test_and_check_cloudflare(
+    request: Optional[CloudflareTestRequest] = None,  # ⭐ 接受請求體
+    current_user: str = Depends(get_current_user)
+):
     """
     統一檢查：配置完整性 + 連接測試
     需要登錄
 
+    ⭐ 新功能：
+    - 優先使用前端輸入框的值進行測試
+    - 追蹤配置來源（輸入框 vs .env vs 環境變數）
+    - 檢測 Docker 環境
+
     執行步驟：
-    1. 檢查配置是否存在
-    2. 如果配置存在，執行完整的連接測試（Token → Account → Namespace）
-    3. 返回詳細的分步驟結果和修復建議
+    1. 收集配置值（優先級：請求參數 > .env > 環境變數）
+    2. 檢查配置是否存在
+    3. 如果配置存在，執行完整的連接測試（Token → Account → Namespace）
+    4. 返回詳細的分步驟結果、配置來源和修復建議
 
     Returns:
         {
             "success": bool,
             "config_check": {...},  # 配置檢查結果
             "connection_test": {...},  # 連接測試結果（如果配置完整）
+            "config_source": {...},  # 配置來源
+            "is_docker": bool,  # 是否在 Docker 環境中運行
+            "env_file_exists": bool,  # .env 文件是否存在
             "message": str,
             "suggestions": []  # 修復建議
         }
@@ -1231,25 +1616,67 @@ async def test_and_check_cloudflare(current_user: str = Depends(get_current_user
             "success": False,
             "config_check": {},
             "connection_test": None,
+            "config_source": {},
+            "is_docker": False,
+            "env_file_exists": False,
+            "env_file_path": None,
             "message": "",
             "suggestions": []
         }
 
-        # ========== 步驟 1: 配置完整性檢查 ==========
+        # ========== 步驟 1: 配置來源檢測和值收集 ==========
+        # 使用輔助函數獲取每個配置項的值和來源
+        account_id, account_id_source = await _get_config_value(
+            request.cf_account_id if request else None,
+            "CF_ACCOUNT_ID",
+            settings.cf_account_id
+        )
+
+        namespace_id, namespace_id_source = await _get_config_value(
+            request.cf_kv_namespace_id if request else None,
+            "CF_KV_NAMESPACE_ID",
+            settings.cf_kv_namespace_id
+        )
+
+        api_token, api_token_source = await _get_config_value(
+            request.cf_api_token if request else None,
+            "CF_API_TOKEN",
+            settings.cf_api_token
+        )
+
+        # 記錄配置來源
+        result["config_source"] = {
+            "cf_account_id": account_id_source,
+            "cf_kv_namespace_id": namespace_id_source,
+            "cf_api_token": api_token_source
+        }
+
+        # ========== 步驟 2: Docker 環境檢測 ==========
+        result["is_docker"] = (
+            os.path.exists("/.dockerenv") or
+            os.environ.get("DOCKER_CONTAINER") == "true"
+        )
+
+        env_file_path = os.path.join(os.getcwd(), ".env")
+        result["env_file_exists"] = os.path.exists(env_file_path)
+        if result["env_file_exists"]:
+            result["env_file_path"] = env_file_path
+
+        # ========== 步驟 3: 配置完整性檢查 ==========
         missing_items = []
-        if not settings.cf_account_id or not settings.cf_account_id.strip():
+        if not account_id or not account_id.strip():
             missing_items.append("CF_ACCOUNT_ID")
-        if not settings.cf_kv_namespace_id or not settings.cf_kv_namespace_id.strip():
+        if not namespace_id or not namespace_id.strip():
             missing_items.append("CF_KV_NAMESPACE_ID")
-        if not settings.cf_api_token or not settings.cf_api_token.strip():
+        if not api_token or not api_token.strip():
             missing_items.append("CF_API_TOKEN")
 
         result["config_check"] = {
             "complete": len(missing_items) == 0,
             "missing_items": missing_items,
-            "cf_account_id_configured": bool(settings.cf_account_id and settings.cf_account_id.strip()),
-            "cf_kv_namespace_id_configured": bool(settings.cf_kv_namespace_id and settings.cf_kv_namespace_id.strip()),
-            "cf_api_token_configured": bool(settings.cf_api_token and settings.cf_api_token.strip())
+            "cf_account_id_configured": bool(account_id and account_id.strip()),
+            "cf_kv_namespace_id_configured": bool(namespace_id and namespace_id.strip()),
+            "cf_api_token_configured": bool(api_token and api_token.strip())
         }
 
         # 配置不完整 - 返回提示
@@ -1271,48 +1698,101 @@ async def test_and_check_cloudflare(current_user: str = Depends(get_current_user
 
             return result
 
-        # ========== 步驟 2: 連接測試 ==========
+        # ========== 步驟 4: 連接測試 ==========
         await log_service.log(
             level=LogLevel.INFO,
             log_type=LogType.SYSTEM,
-            message="開始執行 Cloudflare KV 連接測試",
+            message="开始执行 Cloudflare KV 连接测试",
             details={
-                "account_id": settings.cf_account_id[:8] + "...",
-                "namespace_id": settings.cf_kv_namespace_id[:8] + "..."
+                "account_id": account_id[:8] + "..." if account_id else "None",
+                "namespace_id": namespace_id[:8] + "..." if namespace_id else "None",
+                "account_id_source": account_id_source,
+                "namespace_id_source": namespace_id_source,
+                "api_token_source": api_token_source
             }
         )
 
         connection_result = await cloudflare_helper.test_connection(
-            account_id=settings.cf_account_id,
-            namespace_id=settings.cf_kv_namespace_id,
-            api_token=settings.cf_api_token
+            account_id=account_id,
+            namespace_id=namespace_id,
+            api_token=api_token
         )
 
         result["connection_test"] = connection_result
 
-        # 連接測試成功
+        # 连接测试成功 - 继续进行配置匹配度检查
         if connection_result.get("success"):
-            result["success"] = True
-            result["message"] = "✅ 配置完整且連接正常！Cloudflare KV 已準備就緒"
-            result["suggestions"] = [
-                "🎉 所有檢查通過，您可以開始使用 Cloudflare KV 接收郵件了",
-                "💡 別忘了配置 Email Routing：https://dash.cloudflare.com → 選擇域名 → Email → Email Routing"
-            ]
+            # ⭐ 步驟 5: 配置匹配度检查
+            match_result = await cloudflare_helper.verify_config_match(
+                account_id=account_id,
+                namespace_id=namespace_id,
+                api_token=api_token
+            )
+
+            result["config_match"] = match_result
+            result["success"] = match_result.get("match", False)
+
+            # ⭐ 步驟 6: 域名配置检查（新增 - 使用 Cloudflare API）
+            cf_kv_domains_value = settings.cf_kv_domains
+
+            # 使用 API 检查域名（如果连接成功）
+            domains_check_api = await cloudflare_helper.check_domains_with_api(
+                account_id=account_id,
+                api_token=api_token,
+                cf_kv_domains=cf_kv_domains_value
+            )
+            result["domains_check"] = domains_check_api
+
+            if match_result.get("match"):
+                # 完全匹配
+                result["message"] = "✅ 配置完整且连接正常！所有配置项相互匹配"
+                result["suggestions"] = match_result.get("suggestions", [])
+
+                # 添加域名配置建议（使用新的 API 结果）
+                if domains_check_api.get("success"):
+                    result["suggestions"].append(
+                        f"\n📧 域名配置: {domains_check_api.get('message', '')}"
+                    )
+                    # 添加 API 检查的详细建议
+                    result["suggestions"].extend(domains_check_api.get("suggestions", []))
+                else:
+                    result["suggestions"].append(
+                        f"\n⚠️ 域名检查: {domains_check_api.get('message', '')}"
+                    )
+                    result["suggestions"].extend(domains_check_api.get("suggestions", []))
+            else:
+                # 配置不匹配
+                result["message"] = "⚠️ 连接正常，但配置项不匹配"
+                result["suggestions"] = match_result.get("suggestions", [])
+
+                # 域名配置建议
+                if domains_check_api.get("success"):
+                    result["suggestions"].append(
+                        f"\n📧 域名配置: {domains_check_api.get('message', '')}"
+                    )
+                else:
+                    result["suggestions"].append(
+                        f"\n⚠️ 域名检查失败: {domains_check_api.get('message', '')}"
+                    )
 
             await log_service.log(
-                level=LogLevel.SUCCESS,
+                level=LogLevel.SUCCESS if result["success"] else LogLevel.WARNING,
                 log_type=LogType.SYSTEM,
-                message="Cloudflare KV 連接測試成功",
+                message="Cloudflare KV 连接测试完成" + (" (配置匹配)" if result["success"] else " (配置不匹配)"),
                 details={
                     "checks_passed": len(connection_result.get("checks", [])),
-                    "overall_status": connection_result.get("overall_status")
+                    "overall_status": connection_result.get("overall_status"),
+                    "config_match": match_result.get("match", False),
+                    "issues": match_result.get("issues", []),
+                    "domains_configured": domains_check_api.get("configured", False),
+                    "domains_count": domains_check_api.get("count", 0)
                 }
             )
 
             return result
 
-        # 連接測試失敗 - 分析失敗原因並提供建議
-        result["message"] = f"❌ {connection_result.get('message', '連接測試失敗')}"
+        # 连接测试失败 - 分析失败原因并提供建议
+        result["message"] = f"❌ {connection_result.get('message', '连接测试失败')}"
 
         # 根據失敗的檢查項提供針對性建議
         checks = connection_result.get("checks", [])
@@ -1324,46 +1804,46 @@ async def test_and_check_cloudflare(current_user: str = Depends(get_current_user
             if check_status == "failed":
                 if "API Token" in check_name:
                     result["suggestions"].extend([
-                        "🔑 API Token 問題：",
-                        "  • 請前往 https://dash.cloudflare.com/profile/api-tokens 重新創建 Token",
-                        "  • 確保 Token 擁有以下權限：",
+                        "🔑 API Token 问题：",
+                        "  • 请前往 https://dash.cloudflare.com/profile/api-tokens 重新创建 Token",
+                        "  • 确保 Token 拥有以下权限：",
                         "    - Account Settings: Read",
                         "    - Workers KV Storage: Read",
-                        "  • 檢查 Token 是否已過期"
+                        "  • 检查 Token 是否已过期"
                     ])
                 elif "Account ID" in check_name:
                     result["suggestions"].extend([
-                        "🆔 Account ID 問題：",
-                        "  • 請前往 https://dash.cloudflare.com/",
-                        "  • 點擊右側「⋮」按鈕",
-                        "  • 確認帳戶 ID 是否正確（32 位十六進制字符串）",
-                        f"  • 當前配置：{settings.cf_account_id[:8]}..."
+                        "🆔 Account ID 问题：",
+                        "  • 请前往 https://dash.cloudflare.com/",
+                        "  • 点击右侧「⋮」按钮",
+                        "  • 确认帐户 ID 是否正确（32 位十六进制字符串）",
+                        f"  • 当前配置：{account_id[:8]}..." if account_id else "  • 当前配置：未设置"
                     ])
                 elif "Namespace" in check_name:
                     result["suggestions"].extend([
-                        "📦 KV Namespace 問題：",
-                        "  • Namespace ID 不存在或無法訪問",
-                        "  • 請執行：wrangler kv namespace create EMAIL_STORAGE",
+                        "📦 KV Namespace 问题：",
+                        "  • Namespace ID 不存在或无法访问",
+                        "  • 请执行：wrangler kv namespace create EMAIL_STORAGE",
                         "  • 或前往 https://dash.cloudflare.com → Workers & Pages → KV",
-                        "  • 檢查 Namespace 是否已創建",
-                        f"  • 當前配置：{settings.cf_kv_namespace_id[:8]}..."
+                        "  • 检查 Namespace 是否已创建",
+                        f"  • 当前配置：{namespace_id[:8]}..." if namespace_id else "  • 当前配置：未设置"
                     ])
 
-        # 如果沒有具體建議，提供通用建議
+        # 如果没有具体建议，提供通用建议
         if not result["suggestions"]:
             result["suggestions"] = [
-                "⚠️ 連接測試失敗，請檢查以下項目：",
-                "1. API Token 是否有效且未過期",
-                "2. Account ID 是否正確",
-                "3. KV Namespace 是否已創建",
-                "4. 網絡連接是否正常",
-                "5. Cloudflare 服務是否正常運行"
+                "⚠️ 连接测试失败，请检查以下项目：",
+                "1. API Token 是否有效且未过期",
+                "2. Account ID 是否正确",
+                "3. KV Namespace 是否已创建",
+                "4. 网络连接是否正常",
+                "5. Cloudflare 服务是否正常运行"
             ]
 
         await log_service.log(
             level=LogLevel.ERROR,
             log_type=LogType.SYSTEM,
-            message="Cloudflare KV 連接測試失敗",
+            message="Cloudflare KV 连接测试失败",
             details={
                 "overall_status": connection_result.get("overall_status"),
                 "failed_checks": [c for c in checks if c.get("status") == "failed"]
@@ -1376,7 +1856,7 @@ async def test_and_check_cloudflare(current_user: str = Depends(get_current_user
         await log_service.log(
             level=LogLevel.ERROR,
             log_type=LogType.SYSTEM,
-            message=f"統一檢查異常: {str(e)}",
+            message=f"统一检查异常: {str(e)}",
             details={
                 "error_type": type(e).__name__,
                 "error_message": str(e)
@@ -1385,5 +1865,5 @@ async def test_and_check_cloudflare(current_user: str = Depends(get_current_user
 
         raise HTTPException(
             status_code=500,
-            detail=f"檢查過程中發生錯誤: {str(e)}"
+            detail=f"检查过程中发生错误: {str(e)}"
         )

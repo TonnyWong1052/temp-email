@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # Custom Domains
     custom_domains: Optional[str] = None  # JSON array string
     default_domains: Optional[str] = None  # JSON array string
-    enable_custom_domains: bool = False
+    enable_custom_domains: bool = True  # 默認啟用自定義域名支持 (配合 Cloudflare KV 使用)
     enable_builtin_domains: bool = True
 
     # Cloudflare Workers KV (Email Workers 整合)
@@ -121,27 +121,42 @@ def parse_domain_list(json_str: Optional[str]) -> List[str]:
         return []
 
 
+def get_kv_domains() -> List[str]:
+    """获取使用 Cloudflare KV 的域名列表"""
+    if settings.cf_kv_domains:
+        domains = parse_domain_list(settings.cf_kv_domains)
+        # 标准化域名（转小写）
+        return [d.lower() for d in domains]
+    return []
+
+
 def get_active_domains() -> List[str]:
     """
     获取当前活跃的域名列表
 
-    合并策略：
-    1. 如果启用自定义域名且有配置，使用自定义域名
-    2. 如果允许使用内置域名，添加内置域名
-    3. 去重并保持顺序
+    优先级（从高到低）:
+    1. Cloudflare KV 域名 (CF_KV_DOMAINS) - 如果启用了 USE_CLOUDFLARE_KV
+    2. 自定义域名 (CUSTOM_DOMAINS) - 如果启用了 ENABLE_CUSTOM_DOMAINS
+    3. 内置域名 (BUILTIN_EMAIL_DOMAINS) - 如果启用了 ENABLE_BUILTIN_DOMAINS
     """
     domains = []
 
-    # 添加自定义域名
+    # 1. 优先添加 Cloudflare KV 域名
+    if settings.use_cloudflare_kv:
+        kv_domains = get_kv_domains()
+        if kv_domains:
+            domains.extend(kv_domains)
+
+    # 2. 添加自定义域名(避免重复)
     if settings.enable_custom_domains and settings.custom_domains:
         custom = parse_domain_list(settings.custom_domains)
         domains.extend(custom)
 
-    # 添加内置域名
+    # 3. 添加内置域名
     if settings.enable_builtin_domains:
         domains.extend(BUILTIN_EMAIL_DOMAINS)
 
-    # 去重保持顺序
+    # 4. 去重保持顺序(Cloudflare 域名优先)
     seen = set()
     unique_domains = []
     for domain in domains:
@@ -149,6 +164,7 @@ def get_active_domains() -> List[str]:
             seen.add(domain)
             unique_domains.append(domain)
 
+    # 5. 如果没有任何域名,返回内置域名作为后备
     return unique_domains if unique_domains else BUILTIN_EMAIL_DOMAINS
 
 
@@ -191,15 +207,6 @@ def get_cors_origins_list() -> List[str]:
             return parts
     # 默认允许所有
     return ["*"]
-
-
-def get_kv_domains() -> List[str]:
-    """获取使用 Cloudflare KV 的域名列表"""
-    if settings.cf_kv_domains:
-        domains = parse_domain_list(settings.cf_kv_domains)
-        # 标准化域名（转小写）
-        return [d.lower() for d in domains]
-    return []
 
 
 def should_use_cloudflare_kv(email: str) -> bool:

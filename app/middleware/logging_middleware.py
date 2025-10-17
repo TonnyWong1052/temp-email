@@ -93,6 +93,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             "/redoc",
             "/openapi.json",
             "/static",
+            "/favicon.ico",        # 瀏覽器自動請求的圖標（避免 404 干擾日誌）
         }
 
     async def dispatch(self, request: Request, call_next):
