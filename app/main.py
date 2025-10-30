@@ -8,6 +8,7 @@ from fastapi.openapi.utils import get_openapi
 from app.config import settings, get_cors_origins_list
 from app.routers import email, system, admin, pattern
 from app.services.storage_service import storage_service
+from app.services.log_service import log_service, LogLevel, LogType
 
 
 # 生命周期管理
@@ -16,44 +17,89 @@ async def lifespan(app: FastAPI):
     """应用程序生命周期管理"""
     # 启动时
     print("🚀 Starting Temporary Email Service...")
-    print(f"   Port: {settings.port}")
-    print(f"   Environment: {'Development' if settings.reload else 'Production'}")
+    await log_service.log(
+        level=LogLevel.INFO,
+        log_type=LogType.SYSTEM,
+        message="Service starting",
+        details={
+            "port": settings.port,
+            "env": "development" if settings.reload else "production"
+        }
+    )
 
     try:
         origins = get_cors_origins_list()
-        print(f"✅ CORS allow_origins: {origins}")
+        await log_service.log(
+            level=LogLevel.INFO,
+            log_type=LogType.SYSTEM,
+            message="CORS configured",
+            details={"allow_origins": origins}
+        )
     except Exception:
-        print("✅ CORS allow_origins: ['*'] (fallback)")
+        await log_service.log(
+            level=LogLevel.WARNING,
+            log_type=LogType.SYSTEM,
+            message="CORS parse failed, fallback to *",
+            details={"allow_origins": ["*"]}
+        )
 
     # 初始化 Redis（如果啟用）
     if settings.enable_redis:
-        print("\n📦 Initializing Redis connection...")
+        await log_service.log(
+            level=LogLevel.INFO,
+            log_type=LogType.SYSTEM,
+            message="Initializing Redis connection"
+        )
         try:
             from app.services.redis_client import redis_client
 
             connected = await redis_client.connect()
             if connected:
-                print("✅ Redis connected successfully")
-                print(f"   URL: {settings.redis_url}")
-                print(f"   L1 Cache TTL: {settings.cache_ttl}s")
-                print(f"   Max Cache Size: {settings.cache_max_size}")
-                print("   ⚡️ High-performance caching enabled!")
+                await log_service.log(
+                    level=LogLevel.SUCCESS,
+                    log_type=LogType.SYSTEM,
+                    message="Redis connected",
+                    details={
+                        "url": settings.redis_url,
+                        "l1_cache_ttl": settings.cache_ttl,
+                        "cache_max_size": settings.cache_max_size
+                    }
+                )
             else:
-                print("⚠️  Redis connection failed, falling back to in-memory storage")
+                await log_service.log(
+                    level=LogLevel.WARNING,
+                    log_type=LogType.SYSTEM,
+                    message="Redis connect failed, fallback to memory"
+                )
         except Exception as e:
-            print(f"⚠️  Redis initialization error: {e}")
-            print("   Falling back to in-memory storage")
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.SYSTEM,
+                message=f"Redis initialization error: {e}",
+                details={"error": str(e)}
+            )
     else:
-        print("\nℹ️  Redis disabled - using in-memory storage")
-        print("   💡 Tip: Enable Redis for 10,000+ concurrent users support")
+        await log_service.log(
+            level=LogLevel.INFO,
+            log_type=LogType.SYSTEM,
+            message="Redis disabled - using in-memory storage",
+            details={"tip": "Enable Redis for 10,000+ concurrent users support"}
+        )
 
     # 启动后台清理任务
     cleanup_task = asyncio.create_task(cleanup_expired_emails())
 
-    print("\n✅ Service started successfully!")
-    print(f"   🌐 Web UI: http://localhost:{settings.port}")
-    print(f"   📚 API Docs: http://localhost:{settings.port}/docs")
-    print(f"   💪 Ready for high-traffic!\n")
+    await log_service.log(
+        level=LogLevel.SUCCESS,
+        log_type=LogType.SYSTEM,
+        message="Service started",
+        details={
+            "web": f"http://localhost:{settings.port}",
+            "docs": f"http://localhost:{settings.port}/docs"
+        }
+    )
+    # 仅保留关键启动完成打印（其余细节已写入日志）
+    print("✅ Service started successfully!")
 
     yield
 
@@ -66,11 +112,24 @@ async def lifespan(app: FastAPI):
         try:
             from app.services.redis_client import redis_client
             await redis_client.disconnect()
-            print("✅ Redis disconnected")
+            await log_service.log(
+                level=LogLevel.INFO,
+                log_type=LogType.SYSTEM,
+                message="Redis disconnected"
+            )
         except Exception as e:
-            print(f"⚠️  Error disconnecting Redis: {e}")
+            await log_service.log(
+                level=LogLevel.WARNING,
+                log_type=LogType.SYSTEM,
+                message="Error disconnecting Redis",
+                details={"error": str(e)}
+            )
 
-    print("✅ Shutdown complete")
+    await log_service.log(
+        level=LogLevel.INFO,
+        log_type=LogType.SYSTEM,
+        message="Shutdown complete"
+    )
 
 
 # 后台清理任务
@@ -81,11 +140,21 @@ async def cleanup_expired_emails():
             await asyncio.sleep(5 * 60)  # 5分钟
             count = storage_service.cleanup_expired()
             if count > 0:
-                print(f"🧹 Cleaned up {count} expired emails")
+                await log_service.log(
+                    level=LogLevel.INFO,
+                    log_type=LogType.SYSTEM,
+                    message="Expired emails cleaned",
+                    details={"count": count}
+                )
         except asyncio.CancelledError:
             break
         except Exception as e:
-            print(f"❌ Cleanup error: {e}")
+            await log_service.log(
+                level=LogLevel.ERROR,
+                log_type=LogType.SYSTEM,
+                message="Cleanup error",
+                details={"error": str(e)}
+            )
 
 
 # 自定义OpenAPI配置

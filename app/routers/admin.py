@@ -119,7 +119,7 @@ async def admin_login(request: LoginRequest, response: Response):
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用戶名或密碼錯誤"
+            detail="用户名或密码错误"
         )
 
 
@@ -173,11 +173,18 @@ async def update_llm_config(
             request.openai_api_key
         )
 
+        # 若未配置 API Key，為避免 UI/回應顯示 llm 造成誤導，
+        # 同步將預設提取方法切換為 pattern（僅影響執行期設定，不寫入 .env）。
+        if not (request.openai_api_key and request.openai_api_key.strip()):
+            settings.default_code_extraction_method = "pattern"
+
         config = {
             "use_llm_extraction": settings.use_llm_extraction,
             "openai_api_key": settings.openai_api_key,
             "openai_api_base": settings.openai_api_base,
             "openai_model": settings.openai_model,
+            # 回傳目前實際生效的預設提取方法，便於前端正確顯示
+            "default_code_extraction_method": settings.default_code_extraction_method,
         }
 
         return LLMConfigResponse(success=True, config=config, message="配置更新成功")

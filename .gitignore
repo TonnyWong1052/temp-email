@@ -98,8 +98,11 @@ Desktop.ini
 tmp/
 temp/
 
-# Claude
-.claude
+# AI Agent Files
+.claude.md
+.agent.md
+claude.md
+agent.md
 
 # Debug/Diagnostic Tools
 quick_fix.py

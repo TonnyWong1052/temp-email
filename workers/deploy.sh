@@ -85,8 +85,23 @@ else
     print_info "跳过登录步骤"
 fi
 
+# 账号检测与显示
+print_header "步骤 4: 检查 Cloudflare 账号信息"
+
+# 尝试输出 whoami 信息（不一定有 JSON 输出，仅做提示与粗略解析）
+WHOAMI_OUTPUT=$(wrangler whoami 2>&1 || true)
+echo "$WHOAMI_OUTPUT"
+
+# 尝试从输出中提取 Account ID（若无法提取仅记录空字符串）
+ACCOUNT_ID=$(echo "$WHOAMI_OUTPUT" | grep -Eo '[a-f0-9]{32}' | head -1)
+if [ -n "$ACCOUNT_ID" ]; then
+  print_success "检测到 Account ID: $ACCOUNT_ID"
+else
+  print_warning "未能自动解析 Account ID（可稍后手动填入 .env）"
+fi
+
 # 创建 KV Namespace
-print_header "步骤 4: 创建 Workers KV Namespace"
+print_header "步骤 5: 创建 Workers KV Namespace"
 
 # 首先检查是否已存在 namespace
 print_info "检查现有的 KV namespaces..."
@@ -154,7 +169,7 @@ if [ -z "$KV_NAMESPACE_ID" ]; then
 fi
 
 # 更新 wrangler.toml
-print_header "步骤 5: 更新 wrangler.toml 配置"
+print_header "步骤 6: 更新 wrangler.toml 配置"
 
 # 备份原文件
 cp wrangler.toml wrangler.toml.backup
@@ -174,8 +189,66 @@ print_success "wrangler.toml 已更新"
 print_info "当前配置："
 grep -A 2 "kv_namespaces" wrangler.toml
 
+# 权限检查：检测 KV 访问权限（读/写/删）
+print_header "步骤 7: 检查 KV 权限（读/写/删）"
+
+kv_list_keys() {
+  wrangler kv key list --namespace-id "$1" --limit 1 2>&1 || \
+  wrangler kv:key list --namespace-id "$1" --limit 1 2>&1
+}
+
+kv_put_key() {
+  local ns="$1"; local key="$2"; local val="$3"; local ttl="$4"
+  wrangler kv key put "$key" "$val" --namespace-id "$ns" ${ttl:+--expiration-ttl $ttl} 2>&1 || \
+  wrangler kv:key put "$key" "$val" --namespace-id "$ns" ${ttl:+--expiration-ttl $ttl} 2>&1
+}
+
+kv_get_key() {
+  wrangler kv key get "$2" --namespace-id "$1" 2>&1 || \
+  wrangler kv:key get "$2" --namespace-id "$1" 2>&1
+}
+
+kv_delete_key() {
+  wrangler kv key delete "$2" --namespace-id "$1" -f 2>&1 || \
+  wrangler kv:key delete "$2" --namespace-id "$1" -f 2>&1
+}
+
+print_info "测试列出键..."
+KV_LIST_OUTPUT=$(kv_list_keys "$KV_NAMESPACE_ID")
+KV_LIST_EXIT=$?
+echo "$KV_LIST_OUTPUT"
+
+if [ $KV_LIST_EXIT -ne 0 ] || echo "$KV_LIST_OUTPUT" | grep -qiE "(forbidden|unauthorized|permission|denied)"; then
+  print_error "KV 列表权限检查失败。请确保 API Token 具有 Workers KV Storage 权限（Read/Write）。"
+  print_info "建议：在 Cloudflare 创建 API Token 时选择 'Edit Cloudflare Workers' 或自定义 Workers KV 权限"
+  exit 1
+else
+  print_success "KV 读权限通过"
+fi
+
+print_info "测试写入/读取/删除..."
+PROBE_KEY="__deploy_probe_$(date +%s)_$RANDOM__"
+PROBE_VAL="ok"
+PUT_OUT=$(kv_put_key "$KV_NAMESPACE_ID" "$PROBE_KEY" "$PROBE_VAL" 60)
+PUT_EXIT=$?
+if [ $PUT_EXIT -ne 0 ]; then
+  echo "$PUT_OUT"
+  print_error "KV 写入权限检查失败"
+  exit 1
+fi
+
+GET_OUT=$(kv_get_key "$KV_NAMESPACE_ID" "$PROBE_KEY")
+if ! echo "$GET_OUT" | grep -q "$PROBE_VAL"; then
+  echo "$GET_OUT"
+  print_error "KV 读取校验失败"
+  exit 1
+fi
+
+DEL_OUT=$(kv_delete_key "$KV_NAMESPACE_ID" "$PROBE_KEY")
+print_success "KV 读/写/删 权限检查通过"
+
 # 部署 Worker
-print_header "步骤 6: 部署 Email Worker"
+print_header "步骤 8: 部署 Email Worker"
 
 print_info "正在部署 Worker 到 Cloudflare..."
 DEPLOY_OUTPUT=$(wrangler deploy 2>&1)
@@ -195,8 +268,8 @@ else
     exit 1
 fi
 
-# 保存配置信息
-print_header "步骤 7: 保存配置信息"
+# 保存配置信息（文字 + 對應後端 .env 的提示 JSON）
+print_header "步骤 9: 保存配置信息"
 
 CONFIG_FILE="../.cloudflare_config"
 cat > "$CONFIG_FILE" << EOF
@@ -214,6 +287,25 @@ WORKER_URL=$WORKER_URL
 EOF
 
 print_success "配置信息已保存到: $CONFIG_FILE"
+
+# 生成对应后端 .env 的提示 JSON（便于快速拷贝）
+ENV_HINT_FILE="../.cloudflare_env_hint.json"
+cat > "$ENV_HINT_FILE" << EOF
+{
+  "USE_CLOUDFLARE_KV": true,
+  "CF_ACCOUNT_ID": "${ACCOUNT_ID:-}",
+  "CF_KV_NAMESPACE_ID": "${KV_NAMESPACE_ID}",
+  "CF_API_TOKEN": "<请填入你的 API Token>",
+  "CF_KV_DOMAINS": [],
+  "NOTES": [
+    "将以上键值拷贝到后端 .env：USE_CLOUDFLARE_KV, CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID, CF_API_TOKEN, CF_KV_DOMAINS",
+    "API Token 需至少具备 Workers KV Storage (Read/Write)",
+    "如需仅针对自定义域名走 KV，可填写 CF_KV_DOMAINS 为 JSON 数组"
+  ]
+}
+EOF
+
+print_success "后端 .env 提示 JSON 已保存到: $ENV_HINT_FILE"
 
 # 完成总结
 print_header "✨ 部署完成！"

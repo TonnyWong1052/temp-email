@@ -57,10 +57,15 @@ async def get_mails(
     unread_only: bool = Query(False),
 ):
     """
-    获取邮件列表
+    获取邮件列表（完整內容版本）
+
+    🆕 自動返回完整郵件內容：
+    - **content**: 完整純文字內容（經過清理）
+    - **htmlContent**: 完整 HTML 內容（經過清理和增強）
+    - 自動從 Cloudflare KV 批量獲取完整內容（如需要）
 
     - **token**: 邮箱token
-    - **limit**: 最大返回数量 (1-100)
+    - **limit**: 最大返回数量 (1-100，建議保持默認值控制響應大小)
     - **offset**: 偏移量
     - **unread_only**: 只返回未读邮件
     """
@@ -112,23 +117,79 @@ async def get_mails(
             unique_mails.append(mail)
             seen_ids.add(mail.id)
 
+    # 🆕 批量獲取 KV 郵件的完整內容（如果需要）
+    use_kv = should_use_cloudflare_kv(email.address)
+    if use_kv and unique_mails:
+        # 檢查是否有郵件缺少完整內容
+        incomplete_mails = [m for m in unique_mails if not m.html_content]
+
+        if incomplete_mails:
+            if debug:
+                print(f"[Email Router] Found {len(incomplete_mails)} mails with incomplete content, fetching from KV")
+
+            try:
+                from app.services.kv_mail_service import kv_client
+
+                # 批量獲取完整內容
+                full_mails = await kv_client.fetch_mails(email.address, fetch_full_content=True)
+
+                # 建立 ID 到完整郵件的映射
+                full_mail_map = {m.id: m for m in full_mails}
+
+                # 更新不完整的郵件
+                for mail in unique_mails:
+                    if mail.id in full_mail_map and not mail.html_content:
+                        full_mail = full_mail_map[mail.id]
+                        mail.content = full_mail.content
+                        mail.html_content = full_mail.html_content
+                        mail.to = full_mail.to or mail.to
+
+                        if debug:
+                            print(f"[Email Router] Updated mail {mail.id} with full content")
+
+            except Exception as e:
+                if debug:
+                    print(f"[Email Router] Error fetching full content from KV: {e}")
+                    import traceback
+                    print(traceback.format_exc())
+                # 獲取失敗時不拋出錯誤，繼續使用現有內容
+
+    # 🆕 構建回應：返回完整內容和增強的 HTML
+    # 1. 如果有 HTML 內容 → 清理後返回
+    # 2. 如果只有純文本 → 自動轉換為 HTML（識別 URL 和圖片）
+    def _build_mail_response(m):
+        # 處理內容和 HTML
+        if m.html_content:
+            # 有 HTML 內容，清理後返回
+            sanitized_html = html_sanitizer.sanitize(m.html_content)
+            # 同步提供更乾淨的純文字內容（由 HTML 提取）
+            try:
+                safe_text_content = mail_service._extract_text_from_html(sanitized_html or m.html_content)
+            except Exception:
+                safe_text_content = m.content or ""
+        else:
+            # 只有純文本，轉換為 HTML（自動識別 URL 和圖片）
+            sanitized_html = text_to_html_service.convert_text_to_html(m.content)
+            safe_text_content = m.content or ""
+
+        return {
+            "id": m.id,
+            "from": m.from_,
+            "to": m.to,
+            "subject": m.subject,
+            "content": safe_text_content,  # 完整純文字內容
+            "htmlContent": sanitized_html,  # 完整 HTML 內容
+            "receivedAt": m.received_at.isoformat(),
+            "read": m.read,
+            "hasCode": bool(m.codes),
+        }
+
     return {
         "success": True,
         "data": {
             "email": email.address,
             "total": len(storage_service.get_mails(token)),
-            "mails": [
-                {
-                    "id": mail.id,
-                    "from": mail.from_,
-                    "subject": mail.subject,
-                    "content": mail.content[:200],  # 摘要
-                    "receivedAt": mail.received_at.isoformat(),
-                    "read": mail.read,
-                    "hasCode": bool(mail.codes),
-                }
-                for mail in unique_mails
-            ],
+            "mails": [_build_mail_response(mail) for mail in unique_mails],
         },
     }
 
@@ -202,9 +263,15 @@ async def get_mail_detail(token: str, mail_id: str):
     if mail.html_content:
         # 有 HTML 內容，清理後返回
         sanitized_html = html_sanitizer.sanitize(mail.html_content)
+        # 同步提供更乾淨的純文字內容（由 HTML 提取），避免 text/plain 版本可能的重複段落
+        try:
+            safe_text_content = mail_service._extract_text_from_html(sanitized_html or mail.html_content)
+        except Exception:
+            safe_text_content = mail.content or ""
     else:
         # 只有純文本，轉換為 HTML（自動識別 URL 和圖片）
         sanitized_html = text_to_html_service.convert_text_to_html(mail.content)
+        safe_text_content = mail.content or ""
 
     return {
         "success": True,
@@ -213,7 +280,8 @@ async def get_mail_detail(token: str, mail_id: str):
             "from": mail.from_,
             "to": mail.to,
             "subject": mail.subject,
-            "content": mail.content,
+            # 返回優化後的純文字內容（若 HTML 存在則以 HTML 提取的純文字為準，否則使用原始 text/plain）
+            "content": safe_text_content,
             "htmlContent": sanitized_html,  # 返回增強後的 HTML
             "receivedAt": mail.received_at.isoformat(),
             "read": mail.read,
@@ -295,14 +363,26 @@ async def get_codes(
 
 @router.get("/{token}/wait")
 async def wait_for_new_mail(
-    token: str, timeout: int = Query(30, ge=1, le=120), since: Optional[str] = None
+    token: str,
+    timeout: int = Query(30, ge=1, le=300),
+    since: Optional[str] = None,
+    auto_extract_code: bool = Query(False, description="是否自動提取驗證碼"),
+    extraction_method: str = Query("smart", description="提取方法: smart/pattern/llm/regex"),
+    min_confidence: float = Query(0.8, ge=0.0, le=1.0, description="最小置信度"),
 ):
     """
     等待新邮件 (长轮询)
 
     - **token**: 邮箱token
-    - **timeout**: 超时时间(秒) (1-120)
+    - **timeout**: 超时时间(秒) (1-300)
     - **since**: 时间戳，只返回此时间后的邮件
+    - **auto_extract_code**: 是否自動提取驗證碼（默認 false，保持向後兼容）
+    - **extraction_method**: 提取方法
+      - 'smart': 智能級聯（Pattern → LLM → Regex）
+      - 'pattern': 只使用用戶訓練的模式
+      - 'llm': 只使用 LLM 提取
+      - 'regex': 只使用正則表達式
+    - **min_confidence**: 最小置信度過濾（0.0-1.0）
     """
     email = storage_service.get_email_by_token(token)
     if not email:
@@ -310,30 +390,155 @@ async def wait_for_new_mail(
 
     since_date = datetime.fromisoformat(since) if since else datetime.now()
 
-    new_mails = await mail_service.wait_for_new_mail(email.address, since_date, timeout)
+    # 根據 auto_extract_code 參數選擇是否自動提取
+    if auto_extract_code:
+        # 使用增強版本（帶驗證碼提取）
+        new_mails, extraction_stats = await mail_service.wait_for_new_mail_with_codes(
+            email.address, since_date, timeout, extraction_method, min_confidence
+        )
+
+        if new_mails:
+            storage_service.save_mails(token, new_mails)
+
+            # 構建郵件預覽
+            def _build_mail_preview(mail):
+                preview = {
+                    "id": mail.id,
+                    "from": mail.from_,
+                    "subject": mail.subject,
+                    "content": mail.content[:200] if mail.content else "",
+                    "receivedAt": mail.received_at.isoformat(),
+                    "hasCode": bool(mail.codes),
+                }
+
+                # 添加驗證碼信息
+                if mail.codes:
+                    preview["codes"] = [
+                        {
+                            "code": code.code,
+                            "type": code.type,
+                            "length": code.length,
+                            "confidence": code.confidence,
+                            "pattern": code.pattern,
+                            "method": extraction_stats.get("source"),
+                        }
+                        for code in mail.codes
+                    ]
+
+                return preview
+
+            return {
+                "success": True,
+                "data": {
+                    "hasNew": True,
+                    "count": len(new_mails),
+                    "mails": [_build_mail_preview(mail) for mail in new_mails],
+                    "extractionStats": extraction_stats,
+                },
+            }
+    else:
+        # 使用原始版本（不提取驗證碼，保持向後兼容）
+        new_mails = await mail_service.wait_for_new_mail(email.address, since_date, timeout)
+
+        if new_mails:
+            storage_service.save_mails(token, new_mails)
+            return {
+                "success": True,
+                "data": {
+                    "hasNew": True,
+                    "count": len(new_mails),
+                    "mails": [
+                        {
+                            "id": mail.id,
+                            "from": mail.from_,
+                            "subject": mail.subject,
+                            "content": mail.content[:200] if mail.content else "",
+                            "receivedAt": mail.received_at.isoformat(),
+                            "hasCode": bool(mail.codes),
+                            "code": mail.codes[0].code if mail.codes else None,
+                        }
+                        for mail in new_mails
+                    ],
+                },
+            }
+
+    raise HTTPException(status_code=408, detail="在超时时间内没有新邮件")
+
+
+@router.get("/{token}/wait-code")
+async def wait_for_code(
+    token: str,
+    timeout: int = Query(30, ge=1, le=300),
+    since: Optional[str] = None,
+    extraction_method: str = Query("smart", description="提取方法: smart/pattern/llm/regex"),
+    min_confidence: float = Query(0.8, ge=0.0, le=1.0, description="最小置信度"),
+):
+    """
+    等待新郵件並返回驗證碼（快速 API）
+
+    專注於驗證碼場景，返回第一個找到的高置信度驗證碼
+
+    - **token**: 邮箱token
+    - **timeout**: 超时时间(秒) (1-300)
+    - **since**: 时间戳，只返回此时间后的邮件
+    - **extraction_method**: 提取方法 (smart/pattern/llm/regex)
+    - **min_confidence**: 最小置信度（0.0-1.0）
+
+    返回：
+    - **code**: 驗證碼
+    - **type**: 類型 (numeric/alphanumeric/token)
+    - **confidence**: 置信度
+    - **mailId**: 郵件 ID
+    - **from**: 寄件人
+    - **subject**: 主題
+    - **extractedAt**: 提取時間
+    - **extractionMethod**: 實際使用的提取方法
+    - **timeMs**: 提取耗時（毫秒）
+    """
+    email = storage_service.get_email_by_token(token)
+    if not email:
+        raise HTTPException(status_code=404, detail="邮箱未找到")
+
+    since_date = datetime.fromisoformat(since) if since else datetime.now()
+
+    # 使用增強版本等待新郵件並提取驗證碼
+    new_mails, extraction_stats = await mail_service.wait_for_new_mail_with_codes(
+        email.address, since_date, timeout, extraction_method, min_confidence
+    )
 
     if new_mails:
         storage_service.save_mails(token, new_mails)
-        return {
-            "success": True,
-            "data": {
-                "hasNew": True,
-                "count": len(new_mails),
-                "mails": [
-                    {
-                        "id": mail.id,
+
+        # 查找第一個包含高置信度驗證碼的郵件
+        for mail in new_mails:
+            if mail.codes:
+                # 按置信度排序，取最高的
+                sorted_codes = sorted(mail.codes, key=lambda c: c.confidence, reverse=True)
+                best_code = sorted_codes[0]
+
+                return {
+                    "success": True,
+                    "data": {
+                        "code": best_code.code,
+                        "type": best_code.type,
+                        "confidence": best_code.confidence,
+                        "length": best_code.length,
+                        "mailId": mail.id,
                         "from": mail.from_,
                         "subject": mail.subject,
-                        "content": mail.content[:200],
-                        "receivedAt": mail.received_at.isoformat(),
-                        "hasCode": bool(mail.codes),
-                        "code": mail.codes[0].code if mail.codes else None,
-                    }
-                    for mail in new_mails
-                ],
-            },
-        }
+                        "extractedAt": datetime.now().isoformat(),
+                        "extractionMethod": extraction_stats.get("source"),
+                        "timeMs": extraction_stats.get("timeMs"),
+                    },
+                }
 
+        # 有新郵件但沒有找到驗證碼
+        raise HTTPException(
+            status_code=404,
+            detail=f"收到 {len(new_mails)} 封新郵件，但未找到符合條件的驗證碼（置信度 >= {min_confidence}）",
+        )
+
+    # 超時，無新郵件
     raise HTTPException(status_code=408, detail="在超时时间内没有新邮件")
 
 

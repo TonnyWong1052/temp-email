@@ -40,7 +40,7 @@ class CloudflareHelper:
             {
                 "id": 2,
                 "title": "创建 API Token",
-                "description": "点击「Create Token」，选择「Custom Token」，设置以下权限：\n\n🔑 必需权限：\n• Account Settings: Read - 读取帐户信息\n• Workers KV Storage: Read - 读取 KV 数据\n\n🔍 域名检查功能（可选）：\n• Zone: Read - 读取域名列表\n• Email Routing Rules: Read - 读取 Email Routing 配置\n\n添加这些权限后，系统将能够自动检测您的域名并验证 Email Routing 配置状态。",
+                "description": "点击「创建令牌」，选择「创建自定义令牌」，设置以下权限：\n\n🔑 必需权限：\n• 帐户 : 帐户设置: 读取 - 读取帐户信息\n• 帐户 : Workers R2 存储: 读取 - 读取 KV 数据\n\n🔍 域名检查功能（可选）：\n• 区域 : Zone: 读取 - 读取域名列表\n• 帐户 : 电子邮件路由地: 读取 - 读取 Email Routing 配置\n\n添加这些权限后，系统将能够自动检测您的域名并验证 Email Routing 配置状态。",
                 "url": "https://dash.cloudflare.com/profile/api-tokens",
                 "hint": "复制生成的 Token 到下方「API Token」栏位（只显示一次，请妥善保存）",
                 "field_id": "cfApiToken",
@@ -49,7 +49,7 @@ class CloudflareHelper:
             {
                 "id": 3,
                 "title": "创建 KV Namespace",
-                "description": "进入 Workers & Pages → KV，点击「Create namespace」按钮，输入名称（如 EMAIL_STORAGE）",
+                "description": "进入 Workers & Pages → KV，点击「Create instance」按钮，输入名称（如 EMAIL_STORAGE）",
                 "url": "https://dash.cloudflare.com/?to=/:account/workers/kv/namespaces",
                 "hint": "创建完成后，复制 Namespace ID 到下方栏位",
                 "field_id": "cfKvNamespaceId",
@@ -57,26 +57,18 @@ class CloudflareHelper:
             },
             {
                 "id": 4,
-                "title": "检查部署环境",
-                "description": "确保已安装 Node.js (v18+) 和 npm:\n\n• 检查命令: node -v && npm -v\n• 如未安装，请访问 nodejs.org 下载",
-                "hint": "部署脚本需要 Node.js 环境来运行 Wrangler CLI",
+                "title": "部署 Cloudflare Worker",
+                "description": "点击下方的「🚀 Deploy to Cloudflare」按钮，将自动在 Cloudflare 上部署 Email Worker。\n\n部署过程会自动完成:\n1. 创建 Worker 实例\n2. 配置 KV Namespace 绑定\n3. 部署邮件处理代码\n4. 生成访问端点\n\n如果一键部署失败，可以展开下方的「手动配置选项」查看详细步骤。",
+                "url": "https://github.com/TonnyWong1052/temp-email",
+                "hint": "推荐使用一键部署按钮，快速完成 Worker 部署。部署完成后，Worker 会自动绑定到你的 KV Namespace。",
                 "field_id": None,
-                "icon": "🔧",
-                "command": "node -v && npm -v"
+                "icon": "🚀",
+                "manual_config_description": "如果尚未安装项目，请先克隆仓库:\ngit clone https://github.com/TonnyWong1052/temp-email.git\ncd temp-email\n\n然后在项目根目录执行部署脚本:\ncd workers\n./deploy.sh\n\n脚本会自动完成:\n1. 安装/检查 Wrangler CLI\n2. 登录 Cloudflare（首次需要浏览器授权）\n3. 创建 KV Namespace\n4. 部署 Email Worker 到 Cloudflare\n5. 生成 wrangler.toml 配置文件\n\n💡 手动配置 Wrangler:\n• 使用本页的「🧩 Wrangler 片段」或「✍️ 写入 wrangler.toml」功能\n• 生成 wrangler.toml 配置片段，复制到 workers/wrangler.toml 文件中\n• 然后运行: wrangler deploy\n\n💡 首次运行会打开浏览器进行 Cloudflare 授权，请确保已登录 Cloudflare 账户。部署完成后会自动生成 wrangler.toml 配置。"
             },
             {
                 "id": 5,
-                "title": "运行部署cloudflare worker脚本",
-                "description": "如果尚未安装项目，请先克隆仓库:\ngit clone https://github.com/TonnyWong1052/temp-email.git\ncd temp-email\n\n然后在项目根目录执行部署脚本:\ncd workers\n./deploy.sh\n\n脚本会自动完成:\n1. 安装/检查 Wrangler CLI\n2. 登录 Cloudflare（首次需要浏览器授权）\n3. 创建 KV Namespace\n4. 部署 Email Worker 到 Cloudflare\n5. 生成 wrangler.toml 配置文件\n\n💡 手动配置 Wrangler（可选）：\n• 如需手动配置，可使用本页的「🧩 Wrangler 片段」或「✍️ 写入 wrangler.toml」功能\n• 生成 wrangler.toml 配置片段，复制到 workers/wrangler.toml 文件中\n• 然后运行: wrangler deploy",
-                "url": "https://github.com/TonnyWong1052/temp-email",
-                "hint": "首次运行会打开浏览器进行 Cloudflare 授权，请确保已登录 Cloudflare 账户。部署完成后会自动生成 wrangler.toml 配置。",
-                "field_id": None,
-                "icon": "🚀"
-            },
-            {
-                "id": 6,
                 "title": "配置 Email Routing",
-                "description": "在 Cloudflare Dashboard 中设置邮件路由:\n\n1. 选择您的域名\n2. 进入 Email → Email Routing\n3. 点击「启用电子邮件路由」(Enable Email Routing)\n4. 启用后，点击「路由规则」(Routing rules) 选项卡\n5. 找到 Catch-All 规则，点击「编辑」(Edit)\n6. 在「操作」下拉菜单中选择「发送到 Worker」\n7. 选择 Worker: temp-email-worker\n8. 点击保存",
+                "description": "在 Cloudflare Dashboard 中设置邮件路由:\n\n1. 选择您的域名\n   ⚠️ 如果您的域名尚未添加到 Cloudflare，请先前往 Cloudflare Dashboard 添加域名并完成 DNS 配置\n2. 进入 Email → Email Routing\n3. 点击「启用电子邮件路由」(Enable Email Routing)\n4. 启用后，点击「路由规则」(Routing rules) 选项卡\n5. 找到 Catch-All 规则，点击「编辑」(Edit)\n6. 在「操作」下拉菜单中选择「发送到 Worker」\n7. 选择 Worker: temp-email-worker\n8. 点击保存",
                 "url": "https://dash.cloudflare.com/?to=/:account/:zone/email/routing/routes",
                 "hint": "Catch-All 规则会将所有发送到该域名的邮件转发给 Worker 处理",
                 "field_id": None,

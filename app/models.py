@@ -155,3 +155,29 @@ class PatternListResponse(BaseModel):
     success: bool
     patterns: List[dict]
     total: int
+
+
+# 驗證碼提取統計
+class CodeExtractionStats(BaseModel):
+    """驗證碼提取統計信息"""
+    method: str  # 請求的提取方法 (smart, pattern, llm, regex)
+    timeMs: float  # 提取耗時（毫秒）
+    source: Optional[str] = None  # 實際使用的提取方法
+    mailsProcessed: int  # 處理的郵件數量
+    codesFound: int  # 找到的驗證碼數量
+    extractionMethods: Optional[dict] = None  # 各方法使用次數統計
+
+
+# 等待新郵件帶驗證碼響應
+class WaitWithCodeResponse(BaseModel):
+    """等待新郵件（帶自動驗證碼提取）響應"""
+    success: bool
+    data: dict  # 包含 hasNew, count, mails, extractionStats
+
+
+# 快速驗證碼 API 響應
+class WaitCodeResponse(BaseModel):
+    """等待驗證碼（快速 API）響應"""
+    success: bool
+    data: Optional[dict] = None  # 包含 code, type, confidence, mailId 等
+    message: Optional[str] = None  # 超時時的訊息

@@ -2,7 +2,7 @@ import asyncio
 import time
 import traceback
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 import httpx
 import ftfy
 from app.config import settings
@@ -573,6 +573,89 @@ class MailService:
 
         return []  # 超时，无新邮件
 
+    async def wait_for_new_mail_with_codes(
+        self,
+        email: str,
+        since_date: datetime,
+        timeout: int = 30,
+        extraction_method: str = "smart",
+        min_confidence: float = 0.8,
+    ) -> Tuple[List[Mail], dict]:
+        """
+        等待新郵件並自動提取驗證碼（增強版）
+
+        Args:
+            email: 郵箱地址
+            since_date: 只返回此時間後的郵件
+            timeout: 超時時間（秒）
+            extraction_method: 提取方法 ('smart', 'pattern', 'llm', 'regex')
+            min_confidence: 最小置信度過濾
+
+        Returns:
+            (mails_with_codes, extraction_stats)
+        """
+        from app.services.code_extraction_strategy import code_extraction_strategy
+
+        debug = bool(getattr(settings, "debug_email_fetch", False))
+        extraction_start = time.time()
+
+        # 等待新郵件
+        new_mails = await self.wait_for_new_mail(email, since_date, timeout)
+
+        if not new_mails:
+            return [], {
+                "method": extraction_method,
+                "timeMs": 0,
+                "source": None,
+                "mailsProcessed": 0,
+                "codesFound": 0,
+            }
+
+        if debug:
+            print(f"[Mail Service] Found {len(new_mails)} new mails, extracting codes...")
+
+        # 為每封郵件提取驗證碼
+        extraction_sources = []
+        total_codes_found = 0
+
+        for mail in new_mails:
+            # 根據指定方法提取
+            preferred = None if extraction_method == "smart" else extraction_method
+            codes, method_used, duration_ms = await code_extraction_strategy.extract_codes_smart(
+                mail, preferred_method=preferred
+            )
+
+            # 過濾低置信度的驗證碼
+            if codes:
+                filtered_codes = [c for c in codes if c.confidence >= min_confidence]
+                mail.codes = filtered_codes
+                total_codes_found += len(filtered_codes)
+                extraction_sources.append(method_used)
+
+                if debug and filtered_codes:
+                    print(
+                        f"[Mail Service] Mail {mail.id}: Found {len(filtered_codes)} codes "
+                        f"(method: {method_used}, time: {duration_ms:.0f}ms)"
+                    )
+
+        extraction_duration = (time.time() - extraction_start) * 1000
+
+        # 統計信息
+        stats = {
+            "method": extraction_method,
+            "timeMs": round(extraction_duration, 2),
+            "source": extraction_sources[0] if extraction_sources else None,
+            "mailsProcessed": len(new_mails),
+            "codesFound": total_codes_found,
+            "extractionMethods": dict(
+                (method, extraction_sources.count(method)) for method in set(extraction_sources)
+            )
+            if extraction_sources
+            else {},
+        }
+
+        return new_mails, stats
+
     def _parse_date(self, v) -> datetime:
         """解析多种日期格式"""
         try:
@@ -627,22 +710,43 @@ Date: {mail.received_at.isoformat()}
 {mail.content}"""
 
     def _extract_text_from_html(self, html: str) -> str:
-        """从HTML中提取纯文本"""
+        """从HTML中提取纯文本（改進版：正確處理空白字符）"""
         import re
 
         # 移除script和style标签
         html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
         html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
 
-        # 移除HTML标签
-        text = re.sub(r'<[^>]+>', ' ', html)
+        # 步驟 1: 為塊級元素添加換行符（確保內容分段）
+        # 這些標籤通常代表內容的邏輯分隔，應該保留為換行
+        block_elements = ['p', 'div', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                          'li', 'tr', 'td', 'th', 'blockquote', 'pre']
+        for tag in block_elements:
+            # 閉合標籤後添加換行
+            html = re.sub(rf'</{tag}>', f'</{tag}>\n', html, flags=re.IGNORECASE)
+            # <br> 和 <hr> 可能是自閉合
+            if tag in ['br', 'hr']:
+                html = re.sub(rf'<{tag}[^>]*/?>', f'<{tag}>\n', html, flags=re.IGNORECASE)
 
-        # 解码HTML实体
+        # 步驟 2: 為行內元素之間添加空格（避免單詞連接）
+        # 在所有剩餘的標籤前後添加空格
+        html = re.sub(r'<([^>]+)>', r' <\1> ', html)
+
+        # 步驟 3: 移除所有HTML标签（此時已有適當的空白字符）
+        text = re.sub(r'<[^>]+>', '', html)
+
+        # 步驟 4: 解码HTML实体
         import html as html_module
         text = html_module.unescape(text)
 
-        # 清理多余空白
-        text = re.sub(r'\s+', ' ', text)
+        # 步驟 5: 清理多余空白（但保留換行）
+        # 先將多個空格合併為一個空格
+        text = re.sub(r'[ \t]+', ' ', text)
+        # 清理多餘換行（最多保留兩個連續換行）
+        text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
+        # 移除每行前後的空白
+        text = '\n'.join(line.strip() for line in text.split('\n'))
+        # 移除文首文尾的空白
         text = text.strip()
 
         return text

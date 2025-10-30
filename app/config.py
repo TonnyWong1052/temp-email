@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     log_file_path: str = "logs"  # 日志文件目录
     log_retention_days: int = 7  # 日志保留天数
     log_max_file_size_mb: int = 10  # 单个日志文件最大大小（MB）
+    # 进阶日志控制
+    enable_text_file_logging: bool = True  # 启用文本格式日志（rotate）
+    enable_json_file_logging: bool = True  # 启用 JSON 行日志（rotate，便于日志采集）
+    log_info_sample_rate: int = 1  # INFO 级别抽样（1 表示不抽样；10 表示每 10 条取 1 条）
+    log_success_sample_rate: int = 1  # SUCCESS 级别抽样（同上）
     # Maileroo Email Sending Service
     maileroo_api_url: str = "https://smtp.maileroo.com/api/v2/emails"
     maileroo_api_key: str = ""  # 从环境变量加载

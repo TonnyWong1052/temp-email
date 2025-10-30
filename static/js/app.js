@@ -188,6 +188,11 @@ function getApiDescription(url, method) {
         return '提取验证码';
     }
 
+    // GET /api/domains → 获取域名列表
+    if (method === 'GET' && path === '/api/domains') {
+        return '获取域名列表';
+    }
+
     // Default fallback
     return 'API 调用';
 }
@@ -741,6 +746,19 @@ async function fetchMailsForEmail(token) {
             emailData.mails = [...emailData.mails, ...newMails];
             emailData.mailCount = data.data.total;
 
+            // 🆕 將完整郵件內容存入緩存（避免後續查看詳情時重複調用 API）
+            data.data.mails.forEach(mail => {
+                emailsState.mailDetailsCache[mail.id] = {
+                    subject: mail.subject,
+                    from: mail.from,
+                    to: mail.to,  // 新 API 現在包含 to 字段
+                    content: mail.content,  // 完整純文字內容
+                    htmlContent: mail.htmlContent,  // 完整 HTML 內容
+                    receivedAt: mail.receivedAt,
+                    codes: null  // 驗證碼需要手動提取
+                };
+            });
+
             // Update the specific email card's mail list with actual data
             const mailboxCount = document.getElementById(`mailbox-count-${token}`);
 
@@ -958,135 +976,58 @@ async function showMailDetail(token, mailId) {
         viewModeToggle.setAttribute('data-listener-attached', 'true');
     }
 
-    // 检查缓存
-    if (emailsState.mailDetailsCache[mailId]) {
-        const cached = emailsState.mailDetailsCache[mailId];
-        console.log('[showMailDetail] Using cached data:', cached);
+    // 🆕 優化：完全依賴緩存，不再調用 API
+    // 因為 fetchMailsForEmail() 已經將完整內容存入緩存
+    if (!emailsState.mailDetailsCache[mailId]) {
+        // 緩存不存在，顯示錯誤提示
+        console.warn('[showMailDetail] Mail details not in cache, mailId:', mailId);
 
-        // 使用缓存的完整数据
-        document.getElementById('modalSubject').textContent = cached.subject || '（无主题）';
-        document.getElementById('modalFrom').textContent = cached.from || '未知发件人';
-        document.getElementById('modalDate').textContent = formatFullTime(cached.receivedAt) || '时间未知';
+        document.getElementById('modalSubject').textContent = '郵件數據未載入';
+        document.getElementById('modalFrom').textContent = '請刷新郵件列表';
+        document.getElementById('modalDate').textContent = '';
+        document.getElementById('modalContent').textContent = '郵件詳情尚未載入到本地緩存。\n\n請點擊收件箱旁邊的"刷新"按鈕重新獲取郵件列表，然後再次嘗試查看此郵件。';
+        document.getElementById('modalContentHtml').innerHTML = '<p style="color: #999; text-align: center; padding: 40px;">郵件詳情尚未載入，請刷新郵件列表後重試。</p>';
 
-        // 渲染文本内容 (纯文本)
-        document.getElementById('modalContent').textContent = cached.content || '（邮件内容为空）';
-
-        // 渲染 HTML 内容
-        const htmlContentDiv = document.getElementById('modalContentHtml');
-        if (cached.htmlContent) {
-            htmlContentDiv.innerHTML = cached.htmlContent; // 后端已清理过，安全渲染
-        } else {
-            // 如果没有 HTML 内容，显示纯文本
-            htmlContentDiv.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(cached.content || '（邮件内容为空）')}</pre>`;
-        }
-
-        // 默认显示 HTML 模式
-        currentViewMode = 'html';
-        htmlContentDiv.style.display = 'block';
-        document.getElementById('modalContent').style.display = 'none';
-        const viewModeText = document.getElementById('viewModeText');
-        if (viewModeText) viewModeText.textContent = 'HTML';
-
-        // Check if codes already extracted
-        if (cached.codes !== null && cached.codes !== undefined) {
-            // Hide button and show codes
-            if (extractBtn) extractBtn.style.display = 'none';
-            displayCodesInModal(cached.codes);
-        } else {
-            // Show extract button
-            codesSection.style.display = 'block';
-        }
+        showToast('郵件詳情不在緩存中，請刷新郵件列表', 'warning');
         return;
     }
 
-    // 从 API 获取完整邮件数据
-    try {
-        const response = await fetch(`${API_BASE}/api/email/${token}/mails/${mailId}`);
+    // 使用緩存的完整數據
+    const cached = emailsState.mailDetailsCache[mailId];
+    console.log('[showMailDetail] Using cached data (no API call):', cached);
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+    // 更新顯示
+    document.getElementById('modalSubject').textContent = cached.subject || '（無主題）';
+    document.getElementById('modalFrom').textContent = cached.from || '未知發件人';
+    document.getElementById('modalDate').textContent = formatFullTime(cached.receivedAt) || '時間未知';
 
-        const data = await response.json();
-        console.log('[showMailDetail] API response:', data);
+    // 渲染文本內容 (純文本)
+    document.getElementById('modalContent').textContent = cached.content || '（郵件內容為空）';
 
-        if (data.success && data.data) {
-            const mail = data.data;
-            console.log('[showMailDetail] Mail data fields:', {
-                hasSubject: !!mail.subject,
-                hasFrom: !!mail.from,
-                hasContent: !!mail.content,
-                hasReceivedAt: !!mail.receivedAt,
-                subject: mail.subject,
-                from: mail.from,
-                contentLength: mail.content ? mail.content.length : 0,
-                receivedAt: mail.receivedAt
-            });
+    // 渲染 HTML 內容
+    const htmlContentDiv = document.getElementById('modalContentHtml');
+    if (cached.htmlContent) {
+        htmlContentDiv.innerHTML = cached.htmlContent; // 後端已清理過，安全渲染
+    } else {
+        // 如果沒有 HTML 內容，顯示純文本
+        htmlContentDiv.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(cached.content || '（郵件內容為空）')}</pre>`;
+    }
 
-            // 存储到缓存
-            emailsState.mailDetailsCache[mailId] = {
-                subject: mail.subject,
-                from: mail.from,
-                content: mail.content,
-                htmlContent: mail.htmlContent, // 新增：储存清理后的 HTML
-                receivedAt: mail.receivedAt,
-                codes: null // Will be populated by manual extraction
-            };
+    // 默認顯示 HTML 模式
+    currentViewMode = 'html';
+    htmlContentDiv.style.display = 'block';
+    document.getElementById('modalContent').style.display = 'none';
+    const viewModeText = document.getElementById('viewModeText');
+    if (viewModeText) viewModeText.textContent = 'HTML';
 
-            // 更新显示 - 使用更安全的默认值处理
-            document.getElementById('modalSubject').textContent =
-                (mail.subject !== undefined && mail.subject !== null && mail.subject !== '')
-                ? mail.subject
-                : '（无主题）';
-
-            document.getElementById('modalFrom').textContent =
-                (mail.from !== undefined && mail.from !== null && mail.from !== '')
-                ? mail.from
-                : '未知发件人';
-
-            document.getElementById('modalDate').textContent =
-                mail.receivedAt
-                ? formatFullTime(mail.receivedAt)
-                : '时间未知';
-
-            // 渲染文本内容 (纯文本)
-            document.getElementById('modalContent').textContent =
-                (mail.content !== undefined && mail.content !== null && mail.content !== '')
-                ? mail.content
-                : '（邮件内容为空）';
-
-            // 渲染 HTML 内容
-            const htmlContentDiv = document.getElementById('modalContentHtml');
-            if (mail.htmlContent) {
-                htmlContentDiv.innerHTML = mail.htmlContent; // 后端已清理过，安全渲染
-            } else {
-                // 如果没有 HTML 内容，显示纯文本
-                htmlContentDiv.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(mail.content || '（邮件内容为空）')}</pre>`;
-            }
-
-            // 默认显示 HTML 模式
-            currentViewMode = 'html';
-            htmlContentDiv.style.display = 'block';
-            document.getElementById('modalContent').style.display = 'none';
-            const viewModeText = document.getElementById('viewModeText');
-            if (viewModeText) viewModeText.textContent = 'HTML';
-
-            // Show extract button
-            codesSection.style.display = 'block';
-        } else {
-            throw new Error('Invalid API response format');
-        }
-    } catch (error) {
-        console.error('[showMailDetail] Failed to fetch mail details:', error);
-
-        // 显示错误信息
-        document.getElementById('modalSubject').textContent = '载入失败';
-        document.getElementById('modalFrom').textContent = '无法载入发件人';
-        document.getElementById('modalDate').textContent = '无法载入时间';
-        document.getElementById('modalContent').textContent = `载入邮件内容时发生错误：${error.message}`;
-
-        // 显示错误提示
-        showToast('载入邮件详情失败，请重试', 'error');
+    // 檢查是否已經提取驗證碼
+    if (cached.codes !== null && cached.codes !== undefined) {
+        // 隱藏提取按鈕，顯示已有的驗證碼
+        if (extractBtn) extractBtn.style.display = 'none';
+        displayCodesInModal(cached.codes);
+    } else {
+        // 顯示提取按鈕
+        codesSection.style.display = 'block';
     }
 }
 

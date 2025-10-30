@@ -449,32 +449,165 @@
 
 
 
+        /* === Mobile Menu Toggle Button === */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu-toggle:hover {
+            box-shadow: var(--shadow-lg);
+            transform: scale(1.05);
+        }
+
+        .mobile-menu-toggle svg {
+            width: 24px;
+            height: 24px;
+            color: var(--gray-700);
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+        }
+
+        /* === Tablet & Mobile Responsive === */
+        @media (max-width: 1024px) {
+            .topbar-title {
+                font-size: 18px;
+            }
+
+            .topbar-actions {
+                gap: 8px;
+            }
+
+            .btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+        }
+
         @media (max-width: 768px) {
+            /* Show mobile menu toggle */
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            /* Sidebar transformations */
             .sidebar {
                 transform: translateX(-100%);
-                transition: transform 0.3s;
+                transition: transform 0.3s ease;
+                box-shadow: var(--shadow-xl);
             }
 
             .sidebar.show {
                 transform: translateX(0);
             }
 
+            /* Main content adjustments */
             .main-content {
                 margin-left: 0;
+                width: 100%;
             }
 
+            /* Topbar mobile layout */
             .topbar {
                 padding: 16px 20px;
+                padding-left: 76px; /* Space for hamburger menu */
             }
 
+            .topbar-title {
+                font-size: 16px;
+            }
+
+            .topbar-actions {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            /* Content padding */
             .content {
-                padding: 20px;
+                padding: 20px 16px;
             }
 
+            /* Card adjustments */
+            .card {
+                margin-bottom: 20px;
+            }
+
+            .card-header {
+                padding: 16px;
+            }
+
+            .card-title {
+                font-size: 16px;
+            }
+
+            .card-body {
+                padding: 16px;
+            }
+
+            /* Form grid to single column */
             .form-grid {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
 
+            /* Form elements */
+            .form-label {
+                font-size: 13px;
+            }
+
+            .form-input,
+            .form-textarea,
+            .form-select {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            /* Badges */
+            .badge {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+
+            /* Login page */
             .login-card {
                 padding: 32px 24px;
                 margin: 16px;
@@ -488,6 +621,276 @@
 
             .login-title {
                 font-size: 24px;
+            }
+
+            /* Stats grid */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 20px;
+            }
+
+            .stat-label {
+                font-size: 11px;
+            }
+
+            /* Nav menu adjustments */
+            .nav-link {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            .nav-icon {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        /* === Small Mobile Devices === */
+        @media (max-width: 480px) {
+            /* Mobile menu button */
+            .mobile-menu-toggle {
+                top: 16px;
+                left: 16px;
+                width: 40px;
+                height: 40px;
+            }
+
+            .mobile-menu-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            /* Topbar compact layout */
+            .topbar {
+                padding: 12px 16px;
+                padding-left: 64px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .topbar-title {
+                font-size: 14px;
+                width: 100%;
+            }
+
+            .topbar-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .btn {
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+
+            .btn span {
+                display: none; /* Hide button text on very small screens */
+            }
+
+            .btn svg {
+                width: 16px;
+                height: 16px;
+                margin: 0;
+            }
+
+            /* Content adjustments */
+            .content {
+                padding: 16px 12px;
+            }
+
+            /* Cards */
+            .card {
+                border-radius: 12px;
+                margin-bottom: 16px;
+            }
+
+            .card-header {
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .card-title {
+                font-size: 14px;
+            }
+
+            .card-body {
+                padding: 12px;
+            }
+
+            /* Form elements */
+            .form-group {
+                margin-bottom: 14px;
+            }
+
+            .form-label {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+
+            .form-input,
+            .form-textarea,
+            .form-select {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            .form-hint {
+                font-size: 11px;
+            }
+
+            /* Stats - full width on very small screens */
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .stat-icon svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .stat-value {
+                font-size: 18px;
+            }
+
+            .stat-label {
+                font-size: 11px;
+            }
+
+            /* Alerts */
+            .alert {
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+
+            /* Sidebar adjustments */
+            .logo {
+                padding: 0 16px 16px;
+            }
+
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .logo-text {
+                font-size: 16px;
+            }
+
+            .nav-link {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            .nav-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            /* Login page */
+            .login-card {
+                padding: 24px 16px;
+                margin: 12px;
+            }
+
+            .login-logo {
+                width: 56px;
+                height: 56px;
+                font-size: 28px;
+            }
+
+            .login-title {
+                font-size: 20px;
+            }
+
+            /* Modal responsive */
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            .modal-header {
+                padding: 16px;
+            }
+
+            .modal-title {
+                font-size: 16px;
+            }
+
+            .modal-body {
+                padding: 16px;
+            }
+
+            .wizard-step {
+                padding: 14px;
+                margin-bottom: 16px;
+            }
+
+            .wizard-step-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+
+            .wizard-step-title {
+                font-size: 14px;
+            }
+
+            .wizard-step-desc {
+                font-size: 12px;
+            }
+
+            /* Checkbox and form controls */
+            .checkbox-group {
+                flex-direction: row;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .checkbox {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        /* === Landscape Orientation on Mobile === */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .topbar {
+                padding: 10px 16px;
+                padding-left: 56px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
@@ -857,7 +1260,17 @@
     </div>
 
     <div id="configContainer">
-        <aside class="sidebar">
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="開啟選單">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar" id="sidebar">
             <div class="logo">
                 <div class="logo-icon">⚙️</div>
                 <span class="logo-text">系统管理</span>
@@ -876,7 +1289,7 @@
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
                         </svg>
-                        Cloudflare
+                        cloudflare域名配置
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1008,9 +1421,6 @@
                         <div class="card-body">
                             <!-- 按钮组 -->
                             <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-                                <button class="btn btn-primary" id="autoDetectBtn" style="flex: 1; min-width: 150px;">
-                                    ⚡ 自动检测
-                                </button>
                                 <button class="btn btn-secondary" id="wizardBtn" style="flex: 1; min-width: 150px;">
                                     📖 配置向导
                                 </button>
@@ -1238,6 +1648,19 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         </div>
     </div>
 
+    <!-- 手动配置说明模态框 -->
+    <div id="manualConfigModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📝 手动部署配置说明</h3>
+                <button class="modal-close" onclick="closeManualConfigModal()">✕</button>
+            </div>
+            <div class="modal-body" id="manualConfigContent">
+                <!-- 动态加载手动配置内容 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 工作原理流程图模态框 -->
     <div id="flowDiagramModal" class="modal">
         <div class="modal-content" style="max-width: 900px;">
@@ -1394,12 +1817,12 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 const section = link.dataset.section;
-                
+
                 // 跳过外部链接（如实时日志）
                 if (!section) {
                     return; // 允许默认行为（打开链接）
                 }
-                
+
                 e.preventDefault();
 
                 // 更新导航状态
@@ -1409,7 +1832,61 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 显示对应区块
                 document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
                 document.getElementById('section-' + section).classList.add('active');
+
+                // 在移動端點擊導航後自動關閉側邊欄
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
             });
+        });
+
+        // 移動端選單控制
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('show');
+            sidebarOverlay.style.display = 'block';
+            setTimeout(() => {
+                sidebarOverlay.classList.add('show');
+            }, 10);
+            document.body.style.overflow = 'hidden'; // 防止背景滾動
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('show');
+            sidebarOverlay.classList.remove('show');
+            setTimeout(() => {
+                sidebarOverlay.style.display = 'none';
+            }, 300);
+            document.body.style.overflow = ''; // 恢復滾動
+        }
+
+        // 漢堡選單按鈕點擊
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', () => {
+                if (sidebar.classList.contains('show')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+        }
+
+        // 點擊遮罩層關閉側邊欄
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // 監聽視窗大小變化,在桌面模式下移除移動端類別
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('show');
+                sidebarOverlay.style.display = 'none';
+                sidebarOverlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
         });
 
         function showMessage(element, text, type) {
@@ -2133,13 +2610,9 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             }
         });
 
-        // 自动检测
-        document.getElementById('autoDetectBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('autoDetectBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> 检测中...';
-            btn.disabled = true;
-
+        // ===== 可复用操作函数：供配置页按钮和配置向导调用 =====
+        // 自动检测功能（从配置向导调用）
+        async function autoDetectAction() {
             try {
                 const token = localStorage.getItem('admin_token');
                 const response = await fetch('/admin/cloudflare/auto-detect', {
@@ -2220,13 +2693,10 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                         wizardBtn.style.animation = '';
                     }, 6000);
                 }
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
             }
-        });
+        }
 
-        // ===== 可复用操作函数：供配置页按钮和配置向导调用 =====
+        // ===== 其他可复用操作函数 =====
         async function ensureNamespaceAction() {
             const accountId = document.getElementById('cfAccountId').value;
             const apiToken = document.getElementById('cfApiToken').value;
@@ -2743,8 +3213,8 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 构建按钮区域
                 let actionsHtml = '<div class="wizard-step-actions">';
 
-                // 添加 Cloudflare 服务链接按钮（如果有 URL，但排除 step 5）
-                if (step.url && String(step.id) !== '5') {
+                // 添加 Cloudflare 服务链接按钮（如果有 URL，但排除 step 4）
+                if (step.url && String(step.id) !== '4') {
                     // 根据步骤 ID 自定义按钮文本
                     let buttonText = '🔗 打开链接';
                     if (String(step.id) === '1') {
@@ -2753,9 +3223,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                         buttonText = '🔗 打开 API Token 管理';
                     } else if (String(step.id) === '3') {
                         buttonText = '🔗 打开 Workers KV 管理';
-                    } else if (String(step.id) === '4') {
-                        buttonText = '🔗 前往 Node.js 官网';
-                    } else if (String(step.id) === '6') {
+                    } else if (String(step.id) === '5') {
                         buttonText = '🔗 打开 Email Routing 配置';
                     }
 
@@ -2773,33 +3241,37 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                         </button>
                     `;
                 }
+                // 在步骤 1 添加自动检测按钮
+                if (String(step.id) === '1') {
+                    actionsHtml += `
+                        <button class="btn btn-ghost" onclick="triggerAutoDetectFromWizard(event)" style="font-size: 13px;">
+                            🛠️ 可选功能: 自动检测
+                        </button>
+                    `;
+                }
                 // 将「创建 KV Namespace」按钮添加到步骤 3
                 if (String(step.id) === '3') {
                     actionsHtml += `
                         <button class="btn btn-primary" onclick="ensureNamespaceAction()">
-                            🛠️ 可选功能: 快速创建 KV Namespace
+                            🛠️ 可选功能: 快速填写 KV Namespace
                         </button>
                     `;
                 }
-                // 将手动配置选项添加到步骤 5
-                if (String(step.id) === '5') {
+                // 将一键部署按钮和手动配置选项添加到步骤 4
+                if (String(step.id) === '4') {
+                    // 获取手动配置说明（如果有）
+                    const manualConfigDesc = step.manual_config_description || '';
+
                     actionsHtml += `
-                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200);">
-                            <div style="font-size: 14px; color: var(--gray-700); margin-bottom: 12px; font-weight: 600;">
-                                🔧 手动配置选项 (如果自动部署失败):
-                            </div>
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                                <button class="btn btn-secondary" onclick="wranglerSnippetAction()" style="font-size: 13px;">
-                                    🧩 Wrangler 片段
-                                </button>
-                                <span style="color: var(--gray-500); font-size: 13px;">或</span>
-                                <button class="btn btn-ghost" onclick="writeWranglerAction()" style="font-size: 13px;">
-                                    ✍️ 写入 wrangler.toml
-                                </button>
-                            </div>
-                            <div style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">
-                                💡 优先使用上方的自动部署脚本。手动配置仅作为备选方案。
-                            </div>
+                        <div style="margin-top: 8px; display: flex; justify-content: center;">
+                            <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/TonnyWong1052/temp-email/tree/main/workers" target="_blank">
+                                <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Workers" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';" />
+                            </a>
+                        </div>
+                        <div style="margin-top: 12px; display: flex; gap: 8px;">
+                            <button class="btn btn-ghost" onclick="showManualConfigMessage(\`${manualConfigDesc}\`)" style="flex: 1; height: 40px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 8px;">
+                                <span style="font-size: 14px;">🔧 手动配置选项</span>
+                            </button>
                         </div>
                     `;
                 }
@@ -2859,6 +3331,76 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         // 关闭配置向导
         function closeWizardModal() {
             document.getElementById('wizardModal').classList.remove('show');
+        }
+
+        // 从配置向导触发自动检测
+        async function triggerAutoDetectFromWizard(event) {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            const resultDiv = document.getElementById('cfHelperResult');
+
+            // 显示按钮载入动画
+            btn.innerHTML = '<span class="loading"></span> 检测中...';
+            btn.disabled = true;
+
+            // 在结果区域显示载入动画（与测试连接相同的位置）
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'alert alert-info show';
+            resultDiv.innerHTML = '<div style="padding: 16px;"><span class="loading"></span> 正在自动检测 Cloudflare 配置...</div>';
+
+            try {
+                // 关闭向导模态框
+                closeWizardModal();
+
+                // 调用自动检测功能
+                await autoDetectAction();
+            } finally {
+                // 恢复按钮状态
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // 显示手动配置说明的独立模态框
+        function showManualConfigMessage(manualConfigDesc) {
+            if (!manualConfigDesc) {
+                alert('暂无手动配置说明');
+                return;
+            }
+
+            // 构建完整的消息内容
+            const content = `
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; white-space: pre-line; line-height: 1.8; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    <div style="font-weight: 600; font-size: 18px; margin-bottom: 16px; text-align: center;">📝 手动部署步骤说明</div>
+                    <div style="font-size: 14px;">${manualConfigDesc}</div>
+                </div>
+                <div style="background: var(--gray-50); padding: 20px; border-radius: 12px; border: 1px solid var(--gray-200);">
+                    <div style="font-size: 16px; font-weight: 600; color: var(--gray-800); margin-bottom: 16px; text-align: center;">
+                        🛠️ Wrangler 配置工具
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center;">
+                        <button class="btn btn-secondary" onclick="wranglerSnippetAction(); closeManualConfigModal();" style="font-size: 14px; padding: 10px 20px;">
+                            🧩 Wrangler 片段
+                        </button>
+                        <span style="color: var(--gray-500); font-size: 14px;">或</span>
+                        <button class="btn btn-ghost" onclick="writeWranglerAction(); closeManualConfigModal();" style="font-size: 14px; padding: 10px 20px;">
+                            ✍️ 写入 wrangler.toml
+                        </button>
+                    </div>
+                    <div style="font-size: 13px; color: var(--gray-600); margin-top: 16px; text-align: center; background: white; padding: 12px; border-radius: 8px;">
+                        💡 优先使用一键部署按钮。手动配置仅作为备选方案。
+                    </div>
+                </div>
+            `;
+
+            // 设置内容并显示模态框
+            document.getElementById('manualConfigContent').innerHTML = content;
+            document.getElementById('manualConfigModal').classList.add('show');
+        }
+
+        // 关闭手动配置模态框
+        function closeManualConfigModal() {
+            document.getElementById('manualConfigModal').classList.remove('show');
         }
 
         // 显示工作原理流程图
@@ -2952,9 +3494,24 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             }
         });
 
+        document.getElementById('manualConfigModal').addEventListener('click', (e) => {
+            if (e.target.id === 'manualConfigModal') {
+                closeManualConfigModal();
+            }
+        });
+
         // 监听ESC键关闭模态框
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' || e.keyCode === 27) {
+                // 关闭手动配置模态框
+                const manualConfigModal = document.getElementById('manualConfigModal');
+                if (manualConfigModal && manualConfigModal.classList.contains('show')) {
+                    closeManualConfigModal();
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+
                 // 关闭流程图模态框
                 const flowDiagramModal = document.getElementById('flowDiagramModal');
                 if (flowDiagramModal && flowDiagramModal.classList.contains('show')) {

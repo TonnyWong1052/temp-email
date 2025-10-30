@@ -70,14 +70,20 @@ class HtmlSanitizer:
             # 步驟 2: 移除危險屬性（事件處理器）
             html = self._remove_dangerous_attributes(html)
 
-            # 步驟 3: 過濾標籤（白名單）
+            # 步驟 3: 移除典型郵件「前導/預覽」區塊，避免在移除 <style> 後意外顯示造成重複
+            html = self._remove_preheader_sections(html)
+
+            # 步驟 4: 過濾標籤（白名單）
             html = self._filter_tags(html)
 
-            # 步驟 4: 處理連結（自動添加安全屬性）
+            # 步驟 5: 處理連結（自動添加安全屬性）
             html = self._secure_links(html)
 
-            # 步驟 5: 處理圖片（添加樣式類）
+            # 步驟 6: 處理圖片（添加樣式類）
             html = self._process_images(html)
+
+            # 步驟 7: 清理多餘的空白字符（但保留有意義的空格和換行）
+            html = self._cleanup_whitespace(html)
 
             return html
 
@@ -116,21 +122,30 @@ class HtmlSanitizer:
 
     def _filter_tags(self, html: str) -> str:
         """
-        過濾標籤（白名單）
+        過濾標籤（白名單）- 改進版：移除標籤時保留空格
 
         注意：這是簡化實現，生產環境建議使用 bleach 庫
         """
+        # 塊級元素列表（移除時應添加換行）
+        block_elements = {'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                         'ul', 'ol', 'li', 'table', 'tr', 'td', 'th',
+                         'blockquote', 'pre', 'hr', 'br'}
+
         # 移除不在白名單中的標籤
         def replace_tag(match):
-            tag_name = match.group(1).lower()
-            is_closing = match.group(2) == '/'
+            is_closing = match.group(1) == '/'
+            tag_name = match.group(2).lower()
             full_tag = match.group(0)
 
             if tag_name in self.ALLOWED_TAGS:
                 return full_tag
             else:
-                # 移除標籤，保留內容
-                return ''
+                # 移除標籤時保留適當的空白
+                # 塊級元素用換行替換，行內元素用空格替換
+                if tag_name in block_elements:
+                    return '\n' if is_closing else '\n'
+                else:
+                    return ' '
 
         # 匹配開始標籤和結束標籤
         pattern = r'<(/?)([a-zA-Z][a-zA-Z0-9]*)[^>]*?>'
@@ -212,6 +227,49 @@ class HtmlSanitizer:
         text = text.strip()
 
         return text
+
+    def _remove_preheader_sections(self, html: str) -> str:
+        """
+        移除常見郵件的前導/預覽文字區塊，避免在移除 <style> 後顯示造成「內容重複」。
+
+        規則（保守處理）：
+        - 刪除 class 名稱包含 preheader / preview-text / hidden-preheader 的 div/span
+        - 刪除 id 為 preheader 的 div/span
+        僅作用於 div / span，避免過度刪除主要內容區塊。
+        """
+        try:
+            pattern_class = r'<(div|span)([^>]*?class\s*=\s*"[^"]*(preheader|preview-text|hidden-preheader)[^"]*"[^>]*)>.*?</\1>'
+            pattern_id = r'<(div|span)([^>]*?id\s*=\s*"preheader"[^>]*)>.*?</\1>'
+            html = re.sub(pattern_class, '', html, flags=re.IGNORECASE | re.DOTALL)
+            html = re.sub(pattern_id, '', html, flags=re.IGNORECASE | re.DOTALL)
+        except Exception:
+            # 最壞情況保持原樣
+            pass
+        return html
+
+    def _cleanup_whitespace(self, html: str) -> str:
+        """
+        清理多餘的空白字符，但保留有意義的空格和換行
+
+        處理策略：
+        1. 合併多個連續空格為一個（在文本節點內）
+        2. 清理多餘的換行（最多保留兩個連續換行）
+        3. 移除標籤前後多餘的空白
+        """
+        try:
+            # 合併多個空格為一個（但不跨越標籤邊界）
+            html = re.sub(r'(?<=>)\s+(?=<)', ' ', html)  # 標籤之間的空白
+            html = re.sub(r'[ \t]{2,}', ' ', html)  # 文本中的多個空格
+
+            # 清理多餘的換行（最多保留兩個）
+            html = re.sub(r'\n{3,}', '\n\n', html)
+
+            # 移除標籤前後的空白（但保留文本前後的單個空格）
+            html = re.sub(r'>\s+<', '><', html)  # 移除標籤之間的換行和空格
+
+            return html
+        except Exception:
+            return html
 
     def get_text_preview(self, html: Optional[str], max_length: int = 200) -> str:
         """

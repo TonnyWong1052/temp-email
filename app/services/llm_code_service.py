@@ -234,7 +234,7 @@ class LLMCodeService:
                         "messages": [
                             {
                                 "role": "system",
-                                "content": "You are a verification code extraction expert. Extract verification codes, OTP codes, tokens, and authentication codes from email content. Return results in JSON format only."
+                                "content": "You are a verification code extraction expert. Extract exactly ONE most likely verification code (OTP/PIN/token) from email content. Return JSON array with at most 1 item. If no clear code, return []. No explanations or markdown."
                             },
                             {
                                 "role": "user",
@@ -315,18 +315,19 @@ class LLMCodeService:
             raise
 
     def _build_prompt(self, text: str) -> str:
-        """構建 LLM 提示詞"""
-        return f"""You are an expert at extracting verification codes from emails. Analyze the following email and extract ALL verification codes, OTP codes, authentication tokens, or confirmation codes.
+        """構建 LLM 提示詞（限定只返回最有把握的一個）"""
+        return f"""You are an expert at extracting verification codes from emails. Analyze the following email and extract ONLY the SINGLE MOST LIKELY verification code (OTP/PIN/token). Do not list multiple results.
 
 EMAIL CONTENT:
 ---
 {text[:2000]}
 ---
 
-EXTRACTION RULES:
+SELECTION RULES (choose 1 best):
 1. **Numeric codes**: Pure numbers (e.g., 123456, 4567, 87654321)
    - Common lengths: 4, 6, or 8 digits
    - Usually near keywords: "code", "verification", "OTP", "PIN", "驗證碼", "验证码"
+   - Prefer 6-digit numeric if equally plausible
 
 2. **Alphanumeric codes**: Mix of letters and numbers (e.g., ABC123, XYZ789)
    - Usually 6-10 characters
@@ -336,8 +337,9 @@ EXTRACTION RULES:
    - Usually 20+ characters
    - May contain hyphens or underscores
    - Often in URLs or after "token:" keyword
+   - Only choose if context explicitly indicates it's the verification code
 
-CONFIDENCE SCORING:
+CONFIDENCE SCORING (for the single choice):
 - 0.95-1.0: Code with explicit keywords (e.g., "Your code is 123456", "驗證碼：123456")
 - 0.85-0.94: Code in URL parameters (e.g., ?code=ABC123, &token=xyz)
 - 0.80-0.84: Standalone numbers/codes in appropriate context (e.g., email body with verification theme)
@@ -350,7 +352,11 @@ AVOID EXTRACTING:
 - Regular English words (e.g., "below", "Hello", "within")
 - Dates or times
 
-OUTPUT FORMAT (JSON array only, no markdown or explanations):
+OUTPUT CONSTRAINTS:
+- Return a JSON array with at most 1 item (0 or 1).
+- No markdown or explanations.
+
+SINGLE-ITEM JSON EXAMPLE:
 [
   {{
     "code": "123456",
@@ -361,12 +367,12 @@ OUTPUT FORMAT (JSON array only, no markdown or explanations):
   }}
 ]
 
-If no verification codes found, return: []
+If no verification codes found or uncertain, return: []
 
 JSON Response:"""
 
     def _parse_llm_response(self, content: str) -> List[Code]:
-        """解析 LLM 返回的 JSON 響應"""
+        """解析 LLM 返回的 JSON 響應；若有多個，選擇信心最高的單一結果"""
 
         # 嘗試提取 JSON 陣列
         json_match = re.search(r'\[[\s\S]*\]', content)
@@ -376,25 +382,61 @@ JSON Response:"""
         try:
             data = json.loads(json_match.group())
 
-            codes = []
+            # 正常化：確保是列表
+            if isinstance(data, dict):
+                data = [data]
+            if not isinstance(data, list):
+                return []
+
+            candidates: List[Code] = []
+            seen = set()
             for item in data:
                 # 驗證必需字段
                 if not isinstance(item, dict) or 'code' not in item:
                     continue
 
+                raw_code = str(item['code']).strip()
+                if not raw_code:
+                    continue
+                # 去重（同一碼只保留一次）
+                if raw_code in seen:
+                    continue
+                seen.add(raw_code)
+
                 code_type = item.get('type', 'alphanumeric')
                 if code_type not in ['numeric', 'alphanumeric', 'token']:
                     code_type = 'alphanumeric'
 
-                codes.append(Code(
-                    code=str(item['code']),
+                confidence = float(item.get('confidence', 0.8))
+                length = int(item.get('length', len(raw_code)))
+
+                candidates.append(Code(
+                    code=raw_code,
                     type=code_type,
-                    length=item.get('length', len(str(item['code']))),
+                    length=length,
                     pattern='llm_extracted',
-                    confidence=float(item.get('confidence', 0.8))
+                    confidence=confidence
                 ))
 
-            return codes
+            if not candidates:
+                return []
+
+            # 排序規則：信心值優先，其次偏好數字碼（長度 4-8，特別是 6 位）
+            def rank_key(c: Code):
+                is_numeric = (c.type == 'numeric') and c.code.isdigit()
+                is_len6 = (c.length == 6)
+                is_len_4_8 = 4 <= c.length <= 8
+                return (
+                    -c.confidence,           # 高信心優先
+                    -(1 if is_numeric else 0),
+                    -(1 if is_len6 else 0),
+                    -(1 if is_len_4_8 else 0)
+                )
+
+            candidates.sort(key=rank_key)
+
+            # 只返回最優單一結果
+            return [candidates[0]]
 
         except json.JSONDecodeError as e:
             import asyncio
