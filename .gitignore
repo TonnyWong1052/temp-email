@@ -101,8 +101,11 @@ temp/
 # AI Agent Files
 .claude.md
 .agent.md
-claude.md
+.serena/
+CLAUDE.md
+AGENT.md
 agent.md
+clude.md
 
 # Debug/Diagnostic Tools
 quick_fix.py
