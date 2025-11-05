@@ -1,0 +1,548 @@
+{
+  "common": {
+    "buttons": {
+      "generate": "生成",
+      "refresh": "刷新",
+      "clear": "清空",
+      "close": "关闭",
+      "save": "保存",
+      "cancel": "取消",
+      "confirm": "确认",
+      "extract": "提取",
+      "view": "查看",
+      "copy": "复制",
+      "delete": "删除"
+    },
+    "status": {
+      "loading": "加载中...",
+      "success": "成功",
+      "error": "错误",
+      "warning": "警告"
+    },
+    "time": {
+      "seconds": "秒",
+      "minutes": "分钟",
+      "hours": "小时",
+      "ago": "前",
+      "remaining": "剩余",
+      "just_now": "刚刚"
+    }
+  },
+  "pages": {
+    "home": {
+      "title": "临时邮箱服务",
+      "subtitle": "快速生成一次性电子邮件 · 自动提取验证码 · 安全隐私保护",
+      "description": "专业的临时邮箱服务，自动生成一次性电子邮件地址，即时接收验证码",
+      "features": {
+        "instant": "即时生成",
+        "secure": "安全加密",
+        "smart": "智能识别"
+      },
+      "stats": {
+        "active_emails": "活动邮箱",
+        "total_mails": "总收件数"
+      }
+    },
+    "admin": {
+      "title": "系统管理中心",
+      "subtitle": "管理面板和配置",
+      "login": {
+        "page_title": "系统管理中心",
+        "page_subtitle": "请登录以管理系统配置",
+        "form": {
+          "username_label": "用户名",
+          "username_placeholder": "请输入用户名",
+          "password_label": "密码",
+          "password_placeholder": "请输入密码",
+          "login_button": "登录",
+          "logging_in": "登录中..."
+        },
+        "default_account": {
+          "title": "默认管理员账户",
+          "username_label": "用户名：",
+          "password_label": "密码：",
+          "warning": "生产环境请务必修改默认密码"
+        },
+        "messages": {
+          "success": "登录成功！",
+          "failed": "登录失败",
+          "please_login": "❌ 请先登录",
+          "invalid_credentials": "用户名或密码错误"
+        }
+      },
+      "dashboard": {
+        "title": "系统配置管理",
+        "sidebar": {
+          "logo": "系统管理",
+          "server_config": "服务器配置",
+          "cloudflare_config": "Cloudflare 域名配置",
+          "llm_config": "验证码智能提取",
+          "realtime_logs": "实时日志 🔗"
+        },
+        "buttons": {
+          "save_config": "保存配置",
+          "reload_config": "重新加载配置",
+          "logout": "退出登录",
+          "open_menu": "開啟選單",
+          "close_menu": "關閉選單",
+          "show_flow": "📊 查看邮件流程",
+          "wizard": "📖 配置向导",
+          "test_connection": "🔍 测试连接并检查状态",
+          "detect_models": "🔍 自动检测",
+          "manual_input": "✍️ 手动输入",
+          "learn_pattern": "🧠 学习模式",
+          "clear_sample": "🗑️ 清空样本",
+          "refresh": "刷新",
+          "working_principle": "工作原理"
+        },
+        "modals": {
+          "wizard_title": "📖 Cloudflare 配置向导",
+          "manual_config_title": "📝 手动部署配置说明",
+          "flow_diagram_title": "📧 邮件转发工作原理"
+        },
+        "wizard": {
+          "load_success": "配置向导加载成功",
+          "load_failed": "加载向导失败",
+          "step1": {
+            "title": "获取 Cloudflare 账户 ID",
+            "description": "1. 登录 Cloudflare Dashboard\n2. 在右侧边栏找到三个点按钮 (⋮) 并点击\n3. 在下拉菜单中找到并复制帐户 ID",
+            "hint": "帐户 ID 是一串 32 位十六进制字符串，类似: 1234567890abcdef1234567890abcdef"
+          },
+          "step2": {
+            "title": "创建 API Token",
+            "description": "点击「创建令牌」，选择「创建自定义令牌」，设置以下权限：\n\n🔑 必需权限：\n• 帐户 : 帐户设置: 读取 - 读取帐户信息\n• 帐户 : Workers KV 存储: 读取 - 读取 KV 数据\n\n🔍 域名检查功能（可选）：\n• 区域 : Zone: 读取 - 读取域名列表\n• 帐户 : 电子邮件路由地: 读取 - 读取 Email Routing 配置\n\n添加这些权限后，系统将能够自动检测您的域名并验证 Email Routing 配置状态。",
+            "hint": "复制生成的 Token 到下方「API Token」栏位（只显示一次，请妥善保存）"
+          },
+          "step3": {
+            "title": "创建 KV Namespace",
+            "description": "进入 Workers & Pages → KV，点击「Create instance」按钮，输入名称（如 EMAIL_STORAGE）",
+            "hint": "创建完成后，复制 Namespace ID 到下方栏位"
+          },
+          "step4": {
+            "title": "部署 Cloudflare Worker",
+            "description": "点击下方的「🚀 Deploy to Cloudflare」按钮，将自动在 Cloudflare 上部署 Email Worker。\n\n部署过程会自动完成:\n1. 创建 Worker 实例\n2. 配置 KV Namespace 绑定\n3. 部署邮件处理代码\n4. 生成访问端点\n\n如果一键部署失败，可以展开下方的「手动配置选项」查看详细步骤。",
+            "hint": "推荐使用一键部署按钮，快速完成 Worker 部署。部署完成后，Worker 会自动绑定到你的 KV Namespace。"
+          },
+          "step5": {
+            "title": "配置 Email Routing",
+            "description": "在 Cloudflare Dashboard 中设置邮件路由:\n\n1. 选择您的域名\n   ⚠️ 如果您的域名尚未添加到 Cloudflare，请先前往 Cloudflare Dashboard 添加域名并完成 DNS 配置\n2. 进入 Email → Email Routing\n3. 点击「启用电子邮件路由」(Enable Email Routing)\n4. 启用后，点击「路由规则」(Routing rules) 选项卡\n5. 找到 Catch-All 规则，点击「编辑」(Edit)\n6. 在「操作」下拉菜单中选择「发送到 Worker」\n7. 选择 Worker: temp-email-worker\n8. 点击保存",
+            "hint": "Catch-All 规则会将所有发送到该域名的邮件转发给 Worker 处理"
+          },
+          "step_label": "步骤",
+          "buttons": {
+            "copy_command": "📋 复制命令",
+            "open_link": "🔗 打开链接",
+            "open_dashboard": "🔗 打开 Cloudflare Dashboard",
+            "open_api_token": "🔗 打开 API Token 管理",
+            "open_kv_management": "🔗 打开 Workers KV 管理",
+            "open_email_routing": "🔗 打开 Email Routing 配置",
+            "goto_fill": "📝 前往填写",
+            "auto_detect": "🛠️ 可选功能: 自动检测",
+            "quick_fill_kv": "🛠️ 可选功能: 快速填写 KV Namespace",
+            "manual_config": "🔧 手动配置选项"
+          }
+        },
+        "loading": {
+          "auto_detecting": "正在自动检测 Cloudflare 配置...",
+          "fetching_models": "🔍 正在从 API 获取模型列表...",
+          "saving": "保存中...",
+          "reloading": "重载中...",
+          "loading": "加载中...",
+          "checking": "检查中...",
+          "creating_namespace": "🔄 正在创建 KV Namespace...",
+          "generating_wrangler": "🔄 正在生成 Wrangler 配置片段...",
+          "writing_wrangler": "🔄 正在写入 wrangler.toml 文件...\n\n正在将 KV Namespace 配置写入到指定的文件中...",
+          "detecting": "检测中...",
+          "learning": "学习中..."
+        },
+        "check_messages": {
+          "init": "🚀 开始检查...",
+          "token_verifying": "🔑 验证 API Token...",
+          "token_valid": "✅ Token 有效且可用",
+          "token_failed": "❌ API Token 验证失败，请检查 Token 是否正确",
+          "account_verifying": "🆔 验证 Account ID...",
+          "account_valid": "✅ Account ID 正确",
+          "account_failed": "❌ Account ID 验证失败",
+          "namespace_verifying": "📦 验证 KV Namespace...",
+          "namespace_connected": "✅ 成功连接到 Namespace (当前有 {count}+ keys)",
+          "namespace_failed": "❌ KV Namespace 验证失败",
+          "match_checking": "🔗 检查配置匹配度...",
+          "match_success": "✅ 配置匹配",
+          "domains_checking": "📧 检查域名配置...",
+          "domains_found": "📋 发现 {count} 个域名，开始检查...",
+          "domain_checking": "📧 检查域名 {current}/{total}: {domain}",
+          "domains_complete": "✅ 域名检查完成 ({count} 个)",
+          "all_complete": "🎉 所有检查完成！",
+          "check_complete_success": "✅ 检查完成！所有配置正常。",
+          "wrangler_detected": "成功检测到 Wrangler CLI 配置",
+          "wrangler_version": "Wrangler 版本: {version}",
+          "namespace_detected": "检测到 Namespace: {namespace}",
+          "api_token_manual": "API Token 无法自动获取，需要手动创建"
+        },
+        "flow_diagram": {
+          "step1_title": "用户发送邮件",
+          "step1_desc": "用户向临时邮箱地址发送邮件（例如：test@yourdomain.com）<br>邮件服务器查询 DNS MX 记录，确定邮件接收服务器",
+          "step1_detail": "<strong>示例：</strong> gmail.com → DNS 查询 → yourdomain.com MX 记录",
+          "step2_title": "Cloudflare DNS 解析",
+          "step2_desc": "DNS MX 记录指向 Cloudflare Email Routing<br>邮件被路由到 Cloudflare 基础设施进行处理",
+          "step2_detail": "<strong>MX 记录：</strong> yourdomain.com → isaac.mx.cloudflare.net (优先级 10)",
+          "step3_title": "Cloudflare Email Routing",
+          "step3_desc": "Cloudflare 接收邮件并验证发件人<br>触发配置的 Email Worker 进行自定义处理",
+          "step3_detail": "<strong>配置位置：</strong> Cloudflare Dashboard → Email → Email Routing → Routes",
+          "step4_title": "Email Worker 处理",
+          "step4_desc": "JavaScript Worker 拦截邮件并执行以下操作：<br>• 解析邮件内容（纯文本 + HTML）<br>• 提取发件人、收件人、主题、时间戳<br>• 生成唯一的邮件 ID（基于内容哈希）",
+          "step4_detail": "<strong>Worker 文件：</strong> workers/email-handler.js",
+          "step5_title": "存储到 Workers KV",
+          "step5_desc": "将邮件数据存储到 Cloudflare Workers KV（键值数据库）<br>• Key 格式：<code>mail:{邮箱地址}:{时间戳}</code><br>• 自动设置 1 小时过期时间（TTL=3600 秒）<br>• 维护每个邮箱的邮件索引列表（最多 50 封）",
+          "step5_detail": "<strong>示例 Key：</strong> mail:test@example.com:1704096000000",
+          "step6_title": "FastAPI 后端读取",
+          "step6_desc": "Python 后端通过 Cloudflare KV API 读取数据：<br>• 使用 Account ID + Namespace ID + API Token 认证<br>• 调用 Cloudflare REST API 获取邮件<br>• 返回 JSON 格式的邮件数据给前端",
+          "step6_detail": "<strong>API 端点：</strong> GET /api/email/{token}/mails",
+          "step7_title": "用户查看邮件",
+          "step7_desc": "Web 前端显示邮件内容：<br>• 显示邮件列表（发件人、主题、时间）<br>• 显示邮件详细内容（纯文本 + HTML）<br>• 自动提取验证码（使用 LLM 或正则表达式）",
+          "step7_detail": "<strong>前端页面：</strong> http://localhost:1234/",
+          "advantages_title": "💡 技术优势",
+          "advantage1": "<strong>零成本</strong>：Cloudflare Workers KV 免费额度充足（每天 10 万次读取）",
+          "advantage2": "<strong>高性能</strong>：全球 CDN 节点，毫秒级响应速度",
+          "advantage3": "<strong>安全可靠</strong>：邮件自动过期，无需担心数据泄露",
+          "advantage4": "<strong>易于扩展</strong>：支持多个自定义域名，轻松扩展临时邮箱服务"
+        },
+        "sections": {
+          "server": {
+            "title": "服务器配置",
+            "port_label": "端口",
+            "port_hint": "服务器监听端口",
+            "host_label": "主机地址",
+            "host_hint": "服务器绑定地址",
+            "reload_label": "开发模式自动重载",
+            "admin_account": "管理员账户",
+            "admin_username": "管理员用户名",
+            "admin_password": "管理员密码",
+            "password_hint": "留空表示不修改密码",
+            "password_placeholder": "留空则不修改",
+            "restart_required": "需重启",
+            "warning_relogin": "⚠️ 修改管理员账户后需要重新登录"
+          },
+          "cloudflare": {
+            "title": "Cloudflare 配置",
+            "instant_effect": "即时生效",
+            "account_id_label": "Cloudflare 账户 ID",
+            "account_id_placeholder": "your-account-id",
+            "namespace_id_label": "KV Namespace ID",
+            "namespace_id_placeholder": "your-namespace-id",
+            "api_token_label": "Cloudflare API Token",
+            "api_token_placeholder": "your-api-token",
+            "permissions_required": "🔑 所需权限：",
+            "permission_account_read": "Account Settings: Read - 读取账户信息",
+            "permission_kv_read": "Workers KV Storage: Read - 读取 KV 数据",
+            "permission_zone_read": "Zone: Read - 读取域名列表（域名检查功能）",
+            "permission_email_read": "Email Routing Rules: Read - 读取 Email Routing 配置（域名检查功能）",
+            "create_token_link": "📖 创建 API Token →",
+            "checker_info_title": "💡 关于配置检查器",
+            "checker_info_line1": "• 即使检查器显示错误，如果您的配置正确，<strong>功能可能仍然正常工作</strong>",
+            "checker_info_line2": "• 这通常是因为 Docker 环境变量未正确挂载或权限问题导致检查器无法读取配置",
+            "checker_info_line3": "• <strong>建议</strong>：先实际测试功能（生成邮箱并尝试接收邮件），如果功能正常，可以忽略检查器警告"
+          },
+          "domains": {
+            "title": "域名管理",
+            "enable_custom": "启用自定义域名",
+            "custom_domains_label": "自定义域名列表",
+            "custom_domains_placeholder": "example.com\nyour-domain.com\ntest.com",
+            "custom_domains_hint": "每行输入一个域名（自动使用 Cloudflare KV）<br>⚠️ 注意：域名必须已添加到您的 Cloudflare 账户中并完成 Email Routing 配置",
+            "enable_builtin": "启用内置域名",
+            "builtin_domains_hint": "20 个预设的临时邮箱域名（自动使用外部 API）"
+          },
+          "llm": {
+            "title": "验证码智能提取",
+            "instant_effect": "即时生效",
+            "api_docs": "API 文档",
+            "enable_llm": "启用 LLM 验证码提取",
+            "enable_llm_hint": "使用 AI 模型智能识别验证码",
+            "api_key_label": "OpenAI API Key",
+            "api_key_placeholder": "sk-xxx 或 ak-xxx",
+            "api_base_label": "API Base URL",
+            "api_base_placeholder": "https://api.openai.com/v1",
+            "api_base_hint": "自定义 API 端点（支持兼容服务）",
+            "model_label": "模型名称",
+            "model_select_placeholder": "-- 从下拉选择或切换到手动输入 --",
+            "model_input_placeholder": "gpt-3.5-turbo（手动输入）",
+            "model_toggle_title": "切换输入方式",
+            "model_toggle_button": "📋 切换",
+            "model_hint": "手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择",
+            "default_method_label": "前端默认提取方法",
+            "default_method_badge": "前端默认",
+            "method_llm": "🤖 LLM 智能提取（AI 分析）",
+            "method_pattern": "📌 模式训练提取（基于学习）",
+            "default_method_hint": "设置前端调用 API 时的默认提取方法。LLM 模式更智能但需要 API Key，模式训练基于管理员学习的规则，成本更低。",
+            "pattern_training_title": "模式训练",
+            "pattern_training_info": "ℹ️ 粘贴邮件样本，选中验证码文本后点击「学习模式」，系统会自动识别关键词并保存提取规则",
+            "email_sample_label": "邮件样本",
+            "email_sample_placeholder": "粘贴邮件内容，然后选中验证码进行训练...\n\n例如：\n您的验证码是：123456\n有效期为5分钟",
+            "sample_hint_title": "💡 <strong>操作步骤：</strong>",
+            "sample_hint_step1": "① 粘贴邮件内容到上方文本框 →",
+            "sample_hint_step2": "② 使用鼠标拖动选中验证码文本（例如 <code>123456</code>）→",
+            "sample_hint_step3": "③ 「📌 学习选中的验证码模式」按钮会自动激活 →",
+            "sample_hint_step4": "④ 点击按钮完成训练",
+            "learn_button": "📌 学习选中的验证码模式",
+            "learn_button_with_text": "📌 学习「{text}」",
+            "clear_button": "🗑️ 清空",
+            "model_hint_default": "手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择",
+            "model_hint_manual_mode": "手动输入模型名称，或点击「自动检测」从 API 加载可用模型列表",
+            "model_hint_no_models": "⚠️ 请先点击「自动检测」加载模型列表",
+            "model_hint_no_api_base": "⚠️ 请先填写 API Base URL",
+            "model_hint_no_api_key": "⚠️ 请先填写 API Key",
+            "model_hint_detect_failed": "❌ {message}",
+            "learned_patterns_label": "已学习的模式",
+            "reload_button": "🔄 重新加载",
+            "loading_patterns": "加载中...",
+            "patterns": {
+              "no_patterns": "暂无已学习模式，请先训练",
+              "keywords_label": "关键词：",
+              "numeric": "数字",
+              "alphanumeric": "字母数字",
+              "digits_suffix": "位",
+              "email_content_label": "邮件内容：",
+              "highlighted_code_label": "高亮验证码：",
+              "usage_count": "使用 {count} 次",
+              "success_rate": "成功率 {rate}%",
+              "delete_button": "🗑️ 删除",
+              "loading_failed": "加载失败",
+              "network_error": "网络错误",
+              "confirm_delete": "确定要删除这个模式吗？",
+              "delete_success": "✅ 模式已删除",
+              "delete_failed": "❌ 删除失败: {message}",
+              "learn_success": "✅ 模式学习成功！关键词：{keywords}",
+              "learn_failed": "❌ {message}",
+              "learn_network_error": "❌ 网络错误: {message}",
+              "api_error": "❌ API 返回错误: {message}"
+            }
+          }
+        }
+      }
+    }
+  },
+  "email": {
+    "generation": {
+      "title": "生成临时邮箱",
+      "domain_select_label": "选择域名:",
+      "random_domain": "🎲 随机域名（推荐）",
+      "custom_name_label": "自定义名称",
+      "custom_prefix_toggle": "自定义名称",
+      "use_random": "使用随机",
+      "use_custom": "使用自定义",
+      "custom_prefix_placeholder": "例如: user123, hello2024",
+      "custom_prefix_hint": "仅支持字母和数字",
+      "generate_button": "立即生成新邮箱",
+      "generate_hint": "您可以同时创建多个临时邮箱地址，选择随机域名将自动分配可用域名"
+    },
+    "list": {
+      "title": "我的邮箱",
+      "empty_state_title": "尚未创建邮箱",
+      "empty_state_message": "点击上方按钮生成您的第一个临时邮箱地址"
+    },
+    "details": {
+      "from": "发件人:",
+      "time": "时间:",
+      "verification_codes": "验证码",
+      "extract_codes_button": "提取验证码",
+      "mail_content": "邮件内容",
+      "view_mode": "HTML",
+      "loading": "载入中...",
+      "loading_content": "正在载入邮件内容...",
+      "data_not_loaded": "郵件數據未載入",
+      "please_refresh": "請刷新郵件列表",
+      "not_in_cache": "郵件詳情尚未載入到本地緩存。\n\n請點擊收件箱旁邊的「刷新」按鈕重新獲取郵件列表，然後再次嘗試查看此郵件。",
+      "not_in_cache_short": "郵件詳情尚未載入，請刷新郵件列表後重試。",
+      "cache_warning": "郵件詳情不在緩存中，請刷新郵件列表",
+      "no_subject": "（無主題）",
+      "unknown_sender": "未知發件人",
+      "time_unknown": "時間未知",
+      "content_empty": "（郵件內容為空）",
+      "text_view": "文本",
+      "cannot_extract": "無法提取驗證碼，請重新打開郵件"
+    },
+    "status": {
+      "not_found": "未找到",
+      "error": "錯誤",
+      "expired": "已過期"
+    },
+    "mail": {
+      "copy_tooltip": "复制邮箱",
+      "external_view_tooltip": "在外部查看",
+      "delete_tooltip": "删除邮箱",
+      "expand_collapse_tooltip": "展开/收起",
+      "inbox_label": "收件箱",
+      "refresh_tooltip": "刷新",
+      "mails_count": "{count} 封邮件",
+      "from_label": "从:",
+      "no_mails_title": "还没有邮件",
+      "no_mails_message": "等待新邮件到达...",
+      "loading_mails": "加載郵件中..."
+    },
+    "codes": {
+      "found_count": "已找到 {count} 个验证码：",
+      "not_found": "未找到验证码",
+      "extracting": "提取中...",
+      "extract_button": "提取验证码",
+      "extract_tooltip": "提取验证码",
+      "click_to_copy": "点击复制",
+      "close_tooltip": "关闭"
+    }
+  },
+  "api": {
+    "terminal": {
+      "title": "API 调用终端",
+      "welcome": "API 调用监控已启动...",
+      "clear_logs": "清空日志",
+      "confirm_clear": "确定要清空所有 API 日志吗？",
+      "logs_cleared": "API 日志已清空",
+      "request": "请求",
+      "response": "响应",
+      "headers": "Headers",
+      "body": "Body",
+      "no_request_body": "无请求体",
+      "no_response_body": "无响应体"
+    },
+    "notifications": {
+      "popup_toggle": "弹窗通知: {status}",
+      "on": "开启",
+      "off": "关闭"
+    },
+    "auto_refresh": {
+      "toggle": "自动刷新: {status}",
+      "on": "开启",
+      "off": "关闭"
+    },
+    "descriptions": {
+      "generate_email": "生成临时邮箱",
+      "view_mail_detail": "查看邮件详情",
+      "get_mail_list": "获取邮件列表",
+      "extract_codes": "提取验证码",
+      "get_domains": "获取域名列表",
+      "api_call": "API 调用"
+    },
+    "cannot_parse_response": "[无法解析响应体]",
+    "copy_url_tooltip": "复制 URL",
+    "close_tooltip": "关闭",
+    "copy_failed": "复制失败",
+    "copied": "已复制!"
+  },
+  "footer": {
+    "about": {
+      "title": "关于服务",
+      "description": "提供安全、可靠的临时邮箱服务"
+    },
+    "docs": {
+      "title": "开发文档",
+      "api_docs": "API 文档",
+      "redoc": "ReDoc"
+    },
+    "resources": {
+      "title": "更多资源",
+      "github": "GitHub",
+      "guide": "使用指南"
+    },
+    "warning": "仅供测试使用，请勿接收敏感或重要信息",
+    "copyright": "© 2025 TempMail Pro. All rights reserved."
+  },
+  "api_docs": {
+    "title": "临时邮箱服务",
+    "description": "自动生成临时邮箱并接收验证码的API服务",
+    "endpoints": {
+      "generate_email": {
+        "summary": "生成临时邮箱",
+        "description": "生成一个新的临时邮箱地址，可选自定义前缀和域名",
+        "params": {
+          "prefix": "自定义前缀（可选）",
+          "domain": "指定域名（可选，必须在可用域名列表中）"
+        }
+      },
+      "get_mails": {
+        "summary": "获取邮件列表（完整内容版本）",
+        "description": "🆕 自动返回完整邮件内容：\\n- **content**: 完整纯文本内容（经过清理）\\n- **htmlContent**: 完整 HTML 内容（经过清理和增强）\\n- 自动从 Cloudflare KV 批量获取完整内容（如需要）",
+        "params": {
+          "token": "邮箱token",
+          "limit": "最大返回数量（1-100，建议保持默认值控制响应大小）",
+          "offset": "偏移量",
+          "unread_only": "只返回未读邮件"
+        }
+      },
+      "get_mail_detail": {
+        "summary": "获取邮件详情",
+        "description": "获取指定邮件的详细内容，支持纯文本和HTML格式",
+        "params": {
+          "token": "邮箱token",
+          "mail_id": "邮件ID"
+        }
+      },
+      "extract_codes": {
+        "summary": "提取验证码",
+        "description": "智能提取所有邮件中的验证码，采用多级策略：\\n\\n1. **模式提取** - 管理员训练的学习模式，最高优先级\\n2. **LLM提取** - OpenAI兼容API智能提取\\n3. **正则提取** - 多个正则模式，带置信度评分\\n\\n返回去重后的验证码列表，包含置信度评分。",
+        "params": {
+          "token": "邮箱token"
+        }
+      },
+      "wait_for_mail": {
+        "summary": "等待新邮件（长轮询）",
+        "description": "使用长轮询等待新邮件，有新邮件到达或超时后立即返回",
+        "params": {
+          "token": "邮箱token",
+          "timeout": "等待超时时间（秒，默认30，最大60）",
+          "last_check": "上次检查时间戳（ISO格式）"
+        }
+      },
+      "get_domains": {
+        "summary": "获取可用域名",
+        "description": "返回可用的邮箱域名列表，包括：\\n- 自定义域名（基于 Cloudflare Workers KV）\\n- 内置域名（基于外部API）",
+        "params": {}
+      },
+      "health_check": {
+        "summary": "健康检查",
+        "description": "返回服务状态和配置信息",
+        "params": {}
+      },
+      "test_cloudflare": {
+        "summary": "测试 Cloudflare KV 连接",
+        "description": "测试 Cloudflare Workers KV 连接并返回配置状态",
+        "params": {}
+      }
+    }
+  },
+  "language": {
+    "switcher": {
+      "title": "语言"
+    }
+  },
+  "welcome": {
+    "title": "👋 欢迎！",
+    "message": "您可以前往管理页面设置 Cloudflare 域名并配置您的临时邮箱服务。",
+    "go_to_admin": "⚙️ 前往管理页面",
+    "dismiss": "✓ 知道了"
+  },
+  "errors": {
+    "invalid_email": "无效的邮箱地址",
+    "generation_failed": "邮箱生成失败",
+    "fetch_failed": "邮件获取失败",
+    "network_error": "网络错误，请重试",
+    "server_error": "服务器错误，请稍后重试",
+    "copy_failed": "复制失败",
+    "extract_codes_failed": "提取验证码失败，请重试",
+    "time_unknown": "时间未知",
+    "time_format_error": "时间格式错误",
+    "email_not_found_title": "错误：{detail}",
+    "email_not_found_message": "邮箱 {email} 在服务器上未找到。\n\n可能原因：\n- 邮箱已过期\n- Token 已失效\n- 后端存储已清空"
+  },
+  "messages": {
+    "email_copied": "邮箱已复制到剪贴板!",
+    "code_copied": "验证码已复制: {code}",
+    "confirm_delete": "确定要删除这个邮箱吗？",
+    "email_deleted": "邮箱已删除",
+    "auto_refresh_enabled": "已开启自动刷新 (每10秒)",
+    "api_notifications_enabled": "API 弹窗通知已开启",
+    "api_notifications_disabled": "API 弹窗通知已关闭"
+  },
+  "common_labels": {
+    "random_domain": "🎲 随机域名（推荐）",
+    "expired": "已过期"
+  }
+}

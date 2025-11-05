@@ -1,13 +1,13 @@
 # Cloudflare 临时邮箱服务 (Temporary Email Service)
 
+**🌐 语言 / Language**: [简体中文](README.md) | [English](README.en.md)
+
 ![GitHub stars](https://img.shields.io/github/stars/TonnyWong1052/temp-email?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/TonnyWong1052/temp-email?style=social)
 ![GitHub license](https://img.shields.io/github/license/TonnyWong1052/temp-email)
 ![GitHub issues](https://img.shields.io/github/issues/TonnyWong1052/temp-email)
 
 自动生成临时邮箱并接收验证码的服务
-
-**🌐 语言**: 简体中文 (zh-CN)
 
 **🌐 在线演示**: [https://www.ogo.codes](https://www.ogo.codes)
 
@@ -22,11 +22,13 @@
 - 🌐 **自定义域名** - 支持使用任意顶级域名（TLD）
 - ☁️ **Cloudflare 整合** - 通过 Email Workers 接收真实邮件
 - 📡 **实时API** - RESTful API + 长轮询支持
-- 📚 **自动文档** - Swagger UI + ReDoc
+- 📚 **多语言API文档** - Swagger UI + ReDoc（支持英文/简体中文）
 - 🎨 **Web界面** - 简洁的Flat Design风格界面
+- 🌏 **完整国际化** - 支持英文和简体中文，一键切换
 - 🌍 **在线服务** - 提供完整的在线演示和API服务 [https://www.ogo.codes](https://www.ogo.codes)
 
 ### 进阶功能 ⭐️
+- 🌏 **完整国际化 (i18n)** - 前端界面、管理后台、API 文档全面支持多语言切换
 - 🧠 **Pattern 训练系统** - 管理员可训练系统学习特定邮件格式的验证码提取模式
 - 🤖 **AI 模型自动检测** - 自动获取 OpenAI 兼容 API 的可用模型列表
 - 🎯 **Cloudflare 自动配置** - 智能检测 wrangler 配置，一键测试连接
@@ -111,8 +113,15 @@ echo "REDIS_URL=redis://localhost:6379/0" >> .env
 
 **本地部署访问**：
 - **🌐 Web 界面**: `http://localhost:1234`
+  - 英文版：`http://localhost:1234/en/`
+  - 简体中文：`http://localhost:1234/zh-cn/`
 - **📚 API 文档**: `http://localhost:1234/docs`
+  - 英文版：`http://localhost:1234/en/docs`
+  - 简体中文：`http://localhost:1234/zh-cn/docs`
+  - 文档内置语言切换器，可随时切换
 - **🎯 管理后台**: `http://localhost:1234/admin` (默认账号: `admin` / `admin123`)
+  - 英文版：`http://localhost:1234/en/admin`
+  - 简体中文：`http://localhost:1234/zh-cn/admin`
 - **📊 日志查看**: `http://localhost:1234/static/logs`
 
 **在线演示服务**（无需部署）：
@@ -429,7 +438,36 @@ docker-compose up -d
 
 #### ⭐️ 核心功能
 
-**1. 运行时配置管理**
+**1. 完整国际化支持 (i18n)** ⭐️ **新功能**
+
+全面的多语言支持：
+- 🌐 **双语界面** - 支持英文 (English) 和简体中文
+- 🔄 **一键切换** - 界面右上角语言切换器，实时切换无需刷新
+- 📚 **API 文档多语言** - Swagger UI 和 ReDoc 完整翻译
+- 🎯 **管理后台国际化** - 所有配置界面、按钮、提示信息
+- 💾 **语言记忆** - 自动保存用户语言偏好（使用 Cookie）
+- 🌍 **URL 路径识别** - 自动识别 `/en/` 和 `/zh-cn/` 路径
+
+**支持的语言版本**：
+- 🇺🇸 English (en-US) - 完整英文界面
+- 🇨🇳 简体中文 (zh-CN) - 完整中文界面
+
+**访问方式**：
+```
+# Web 界面
+http://localhost:1234/en/       # 英文版
+http://localhost:1234/zh-cn/    # 中文版
+
+# API 文档
+http://localhost:1234/en/docs   # 英文版
+http://localhost:1234/zh-cn/docs # 中文版
+
+# 管理后台
+http://localhost:1234/en/admin  # 英文版
+http://localhost:1234/zh-cn/admin # 中文版
+```
+
+**2. 运行时配置管理**
 - 🔄 **热重载支持** - 部分配置无需重启即可生效
 - 📝 **可视化编辑** - 通过 Web 界面修改 .env 配置
 - 🎯 **智能提示** - 配置项带有详细说明和示例
@@ -446,7 +484,7 @@ docker-compose up -d
 - 服务器端口和主机（`PORT`, `HOST`）
 - 管理员账户（`ADMIN_USERNAME`, `ADMIN_PASSWORD`）
 
-**2. Pattern 训练系统（⭐️ 特色功能）**
+**3. Pattern 训练系统（⭐️ 特色功能）**
 
 智能学习验证码提取模式：
 - 📋 **粘贴邮件内容** - 支持任意邮件格式
@@ -467,7 +505,7 @@ docker-compose up -d
 - ✅ 持久化存储（`data/patterns.json`）
 - ✅ 无需重启服务
 
-**3. AI 模型自动检测（⭐️ 新功能）**
+**4. AI 模型自动检测（⭐️ 特色功能）**
 
 简化 LLM 配置流程：
 - 🔍 **一键检测** - 自动获取可用模型列表
@@ -489,7 +527,7 @@ docker-compose up -d
 - ✅ 30秒超时保护
 - ✅ 详细错误提示
 
-**4. Cloudflare 智能配置（⭐️ 新功能）**
+**5. Cloudflare 智能配置（⭐️ 特色功能）**
 
 简化 Cloudflare Workers 配置：
 - 🎯 **自动检测** - 智能识别本地 wrangler 配置

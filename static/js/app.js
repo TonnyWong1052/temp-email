@@ -1,11 +1,27 @@
 // ===== Temporary Email Service Frontend - Multi-Email Support =====
 
+// i18n Helper: Safe translation function with fallback
+function safeT(key, params = {}) {
+    // Check if i18n is loaded
+    if (typeof window.t === 'function') {
+        const translated = window.t(key, params);
+        // If translation returns the key unchanged, try to get it directly
+        if (translated === key && window.i18n && window.i18n.translations) {
+            // Try direct lookup as fallback
+            return window.i18n.translations[key] || key;
+        }
+        return translated;
+    }
+    // Fallback to key if i18n not loaded yet
+    return key;
+}
+
 // State Management
 const emailsState = {
     emails: [], // Array of email objects with {token, email, expiresAt, mails: [], mailCount: 0, isExpanded: true}
     autoRefreshInterval: null,
     expiresIntervals: {}, // Map of token to interval ID
-    apiNotificationsEnabled: true, // Control API popup notifications
+    apiNotificationsEnabled: false, // Control API popup notifications (default: off)
     mailDetailsCache: {} // Cache for mail details and codes: {mailId: {subject, from, content, receivedAt, codes}}
 };
 
@@ -137,6 +153,7 @@ window.fetch = async function(...args) {
 const generateBtn = document.getElementById('generateBtn');
 const generateBtnText = document.getElementById('generateBtnText');
 const domainSelect = document.getElementById('domainSelect');
+const emailPrefixInput = document.getElementById('emailPrefix');
 const emailList = document.getElementById('emailList');
 const emailCount = document.getElementById('emailCount');
 const autoRefreshBtn = document.getElementById('autoRefreshBtn');
@@ -158,7 +175,37 @@ generateBtn.addEventListener('click', generateEmail);
 if (autoRefreshBtn) autoRefreshBtn.addEventListener('click', toggleAutoRefresh);
 if (clearTerminalBtn) clearTerminalBtn.addEventListener('click', clearTerminalLog);
 if (apiNotifyToggleBtn) apiNotifyToggleBtn.addEventListener('click', toggleApiNotifications);
+
+// Custom Prefix Mode Select Handler
+const prefixModeSelect = document.getElementById('prefixModeSelect');
+const customPrefixInputWrapper = document.getElementById('customPrefixInputWrapper');
+
+if (prefixModeSelect && customPrefixInputWrapper) {
+    prefixModeSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customPrefixInputWrapper.style.display = 'block';
+            // Focus on input when custom mode is selected
+            if (emailPrefixInput) {
+                setTimeout(() => emailPrefixInput.focus(), 100);
+            }
+        } else {
+            customPrefixInputWrapper.style.display = 'none';
+            // Clear input when switching back to random mode
+            if (emailPrefixInput) {
+                emailPrefixInput.value = '';
+            }
+        }
+    });
+}
 closeModal.addEventListener('click', () => mailModal.style.display = 'none');
+
+// Email Prefix Input Validation - Only allow alphanumeric characters
+if (emailPrefixInput) {
+    emailPrefixInput.addEventListener('input', (e) => {
+        // Remove any non-alphanumeric characters (只保留字母和數字)
+        e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+    });
+}
 mailModal.addEventListener('click', (e) => {
     if (e.target === mailModal || e.target.classList.contains('modal-backdrop')) {
         mailModal.style.display = 'none';
@@ -173,28 +220,28 @@ function getApiDescription(url, method) {
 
     // Match different API endpoints
     if (method === 'POST' && path.includes('/api/email/generate')) {
-        return '生成临时邮箱';
+        return safeT('api.descriptions.generate_email');
     }
 
     if (method === 'GET' && path.match(/\/api\/email\/[^/]+\/mails\/[^/]+$/)) {
-        return '查看邮件详情';
+        return safeT('api.descriptions.view_mail_detail');
     }
 
     if (method === 'GET' && path.match(/\/api\/email\/[^/]+\/mails/)) {
-        return '获取邮件列表';
+        return safeT('api.descriptions.get_mail_list');
     }
 
     if (method === 'GET' && path.match(/\/api\/email\/[^/]+\/codes/)) {
-        return '提取验证码';
+        return safeT('api.descriptions.extract_codes');
     }
 
-    // GET /api/domains → 获取域名列表
+    // GET /api/domains → Get domain list
     if (method === 'GET' && path === '/api/domains') {
-        return '获取域名列表';
+        return safeT('api.descriptions.get_domains');
     }
 
     // Default fallback
-    return 'API 调用';
+    return safeT('api.descriptions.api_call');
 }
 
 // Update positions of all notifications
@@ -219,7 +266,7 @@ function showApiNotification(method, url) {
     // Get method class for styling
     const methodClass = method.toLowerCase();
 
-    // Get API description
+    // Get API description (will be updated after insertion if needed)
     const apiDescription = getApiDescription(url, method);
 
     notification.innerHTML = `
@@ -227,15 +274,15 @@ function showApiNotification(method, url) {
             <div class="api-notification-header">
                 <div class="api-notification-left">
                     <span class="api-notification-method ${methodClass}">${method}</span>
-                    <span class="api-notification-title">${escapeHtml(apiDescription)}</span>
+                    <span class="api-notification-title" data-api-description="${url}">${escapeHtml(apiDescription)}</span>
                 </div>
                 <div class="api-notification-actions">
-                    <button class="api-action-btn api-copy-btn" title="复制 URL">
+                    <button class="api-action-btn api-copy-btn" title="${escapeHtml(safeT('api.copy_url_tooltip'))}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
                     </button>
-                    <button class="api-action-btn api-close-btn" title="关闭">
+                    <button class="api-action-btn api-close-btn" title="${escapeHtml(safeT('api.close_tooltip'))}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
@@ -272,6 +319,18 @@ function showApiNotification(method, url) {
             closeApiNotification(notification);
         });
     }
+
+    // Update the description text if it's still showing a translation key
+    setTimeout(() => {
+        const titleElement = notification.querySelector('.api-notification-title');
+        if (titleElement && titleElement.textContent.startsWith('api.')) {
+            // Translation key is showing, update it
+            const newDescription = getApiDescription(url, method);
+            if (newDescription !== titleElement.textContent) {
+                titleElement.textContent = newDescription;
+            }
+        }
+    }, 100);
 
     // Trigger animation
     setTimeout(() => notification.classList.add('show'), 10);
@@ -340,11 +399,11 @@ function fallbackCopyToClipboard(text, button) {
         if (successful) {
             showCopySuccess(button);
         } else {
-            showToast('复制失败', 'error');
+            showToast(safeT('errors.copy_failed'), 'error');
         }
     } catch (err) {
         console.error('Fallback copy failed:', err);
-        showToast('复制失败', 'error');
+        showToast(safeT('errors.copy_failed'), 'error');
     } finally {
         document.body.removeChild(textArea);
     }
@@ -363,7 +422,7 @@ function showCopySuccess(button) {
     // Show small toast
     const miniToast = document.createElement('div');
     miniToast.className = 'api-copy-toast';
-    miniToast.textContent = '已复制!';
+    miniToast.textContent = safeT('api.copied');
     document.body.appendChild(miniToast);
 
     setTimeout(() => miniToast.classList.add('show'), 10);
@@ -393,7 +452,7 @@ async function loadAvailableDomains() {
             const domains = data.data.domains;
 
             // Clear existing options (except the first "random" option)
-            domainSelect.innerHTML = '<option value="">🎲 随机域名（推荐）</option>';
+            domainSelect.innerHTML = `<option value="">${safeT('common_labels.random_domain')}</option>`;
 
             // Add each domain as an option
             domains.forEach(domain => {
@@ -419,16 +478,29 @@ async function loadAvailableDomains() {
 // Generate Email
 async function generateEmail() {
     setLoading(generateBtn, true);
-    generateBtnText.textContent = '生成中';
+    generateBtnText.textContent = safeT('common.status.loading');
 
     try {
+        // Get custom prefix (trim whitespace)
+        const customPrefix = emailPrefixInput ? emailPrefixInput.value.trim() : '';
+
         // Get selected domain (empty string means random)
         const selectedDomain = domainSelect.value;
 
-        // Build URL with optional domain parameter
+        // Build URL with optional prefix and domain parameters
         let url = `${API_BASE}/api/email/generate`;
+        const params = [];
+
+        if (customPrefix) {
+            params.push(`prefix=${encodeURIComponent(customPrefix)}`);
+        }
+
         if (selectedDomain) {
-            url += `?domain=${encodeURIComponent(selectedDomain)}`;
+            params.push(`domain=${encodeURIComponent(selectedDomain)}`);
+        }
+
+        if (params.length > 0) {
+            url += '?' + params.join('&');
         }
 
         const response = await fetch(url, {
@@ -462,20 +534,26 @@ async function generateEmail() {
             // Auto-refresh (10s) or manual refresh will fetch mails later
             // setTimeout(() => fetchMailsForEmail(emailData.token), 500);
 
-            // Show success message with domain info
-            if (selectedDomain) {
-                showToast(`成功生成邮箱：${emailData.email.split('@')[0]}@${selectedDomain}`, 'success');
+            // Clear the custom prefix input after successful generation
+            if (emailPrefixInput) {
+                emailPrefixInput.value = '';
             }
+
+            // Show success message
+            showToast(`✓ ${emailData.email}`, 'success');
 
             // API call is already shown in notification box
         } else {
-            showToast('生成失败: ' + data.error, 'error');
+            showToast(safeT('errors.generation_failed') + ': ' + data.error, 'error');
         }
     } catch (error) {
-        showToast('网络错误: ' + error.message, 'error');
+        showToast(safeT('errors.network_error') + ': ' + error.message, 'error');
     } finally {
         setLoading(generateBtn, false);
-        generateBtnText.textContent = '立即生成新邮箱';
+        // Restore button text using i18n
+        if (typeof window.updateDOM === 'function') {
+            window.updateDOM(); // Re-translate all elements including button
+        }
     }
 }
 
@@ -487,8 +565,8 @@ function renderEmailList() {
                 <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
-                <h3>尚未创建邮箱</h3>
-                <p>点击上方按钮生成您的第一个临时邮箱地址</p>
+                <h3>${safeT('email.list.empty_state_title')}</h3>
+                <p>${safeT('email.list.empty_state_message')}</p>
             </div>
         `;
         return;
@@ -601,8 +679,8 @@ function renderMailList(emailData) {
                 <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
-                <h3>还没有邮件</h3>
-                <p>等待新邮件到达...</p>
+                <h3>${safeT('email.mail.no_mails_title')}</h3>
+                <p>${safeT('email.mail.no_mails_message')}</p>
             </div>
         `;
     }
@@ -852,7 +930,7 @@ function copyEmailAddress(email) {
     // Try modern clipboard API first
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(decodedEmail).then(() => {
-            showToast('邮箱已复制到剪贴板!', 'success');
+            showToast(safeT('messages.email_copied'), 'success');
         }).catch(err => {
             console.error('Clipboard API failed:', err);
             // Fallback to execCommand
@@ -878,13 +956,13 @@ function fallbackCopyEmail(email) {
     try {
         const successful = document.execCommand('copy');
         if (successful) {
-            showToast('邮箱已复制到剪贴板!', 'success');
+            showToast(safeT('messages.email_copied'), 'success');
         } else {
-            showToast('复制失败，请手动复制', 'error');
+            showToast(safeT('errors.copy_failed'), 'error');
         }
     } catch (err) {
         console.error('Fallback copy failed:', err);
-        showToast('复制失败，请手动复制', 'error');
+        showToast(safeT('errors.copy_failed'), 'error');
     } finally {
         document.body.removeChild(textArea);
     }
@@ -892,7 +970,7 @@ function fallbackCopyEmail(email) {
 
 // Delete Email
 function deleteEmail(token) {
-    if (!confirm('确定要删除这个邮箱吗？')) return;
+    if (!confirm(safeT('messages.confirm_delete'))) return;
 
     // Clear expires interval
     if (emailsState.expiresIntervals[token]) {
@@ -907,7 +985,7 @@ function deleteEmail(token) {
     renderEmailList();
     updateStats();
 
-    showToast('邮箱已删除', 'success');
+    showToast(safeT('messages.email_deleted'), 'success');
 }
 
 // View Mode State (HTML or Text)
@@ -1073,7 +1151,7 @@ async function manualExtractCodesInModal() {
 
     } catch (error) {
         console.error('Failed to extract codes:', error);
-        showToast('提取验证码失败，请重试', 'error');
+        showToast(safeT('errors.extract_codes_failed'), 'error');
 
         // Reset button state
         if (extractBtn) {
@@ -1403,11 +1481,11 @@ function fallbackCopyCode(code, onSuccess) {
         if (successful) {
             if (onSuccess) onSuccess();
         } else {
-            showToast('复制失败，请重试', 'error');
+            showToast(safeT('errors.copy_failed'), 'error');
         }
     } catch (err) {
         console.error('Fallback copy failed:', err);
-        showToast('复制失败，请重试', 'error');
+        showToast(safeT('errors.copy_failed'), 'error');
     } finally {
         document.body.removeChild(textArea);
     }
@@ -1446,11 +1524,11 @@ function fallbackCopyCodeSimple(code) {
         if (successful) {
             showToast('验证码已复制: ' + code, 'success');
         } else {
-            showToast('复制失败，请重试', 'error');
+            showToast(safeT('errors.copy_failed'), 'error');
         }
     } catch (err) {
         console.error('Fallback copy failed:', err);
-        showToast('复制失败，请重试', 'error');
+        showToast(safeT('errors.copy_failed'), 'error');
     } finally {
         document.body.removeChild(textArea);
     }
@@ -1465,7 +1543,7 @@ function toggleAutoRefresh() {
         emailsState.autoRefreshInterval = null;
         autoRefreshBtn.classList.remove('active');
         if (autoRefreshText) {
-            autoRefreshText.textContent = '自动刷新: 关闭';
+            autoRefreshText.textContent = safeT('api.auto_refresh.toggle', {status: safeT('api.auto_refresh.off')});
         }
         // Save preference to cookie
         setCookie('autoRefreshEnabled', 'false', 365);
@@ -1473,9 +1551,9 @@ function toggleAutoRefresh() {
         emailsState.autoRefreshInterval = setInterval(refreshAllEmails, 10000); // 每10秒
         autoRefreshBtn.classList.add('active');
         if (autoRefreshText) {
-            autoRefreshText.textContent = '自动刷新: 开启';
+            autoRefreshText.textContent = safeT('api.auto_refresh.toggle', {status: safeT('api.auto_refresh.on')});
         }
-        showToast('已开启自动刷新 (每10秒)', 'success');
+        showToast(safeT('messages.auto_refresh_enabled'), 'success');
         // Save preference to cookie
         setCookie('autoRefreshEnabled', 'true', 365);
     }
@@ -1570,11 +1648,21 @@ function formatTime(isoString) {
     const now = new Date();
     const diff = (now - date) / 1000; // seconds
 
-    if (diff < 60) return '刚刚';
-    if (diff < 3600) return Math.floor(diff / 60) + '分钟前';
-    if (diff < 86400) return Math.floor(diff / 3600) + '小时前';
+    if (diff < 60) return safeT('common.time.just_now', {}, 'Just now');
+    if (diff < 3600) {
+        const minutes = Math.floor(diff / 60);
+        return `${minutes} ${safeT('common.time.minutes', {}, 'minutes')} ${safeT('common.time.ago', {}, 'ago')}`;
+    }
+    if (diff < 86400) {
+        const hours = Math.floor(diff / 3600);
+        return `${hours} ${safeT('common.time.hours', {}, 'hours')} ${safeT('common.time.ago', {}, 'ago')}`;
+    }
 
-    return date.toLocaleDateString('zh-CN', {
+    // Get current language for locale formatting
+    const currentLang = (typeof window.getCurrentLanguage === 'function' ? window.getCurrentLanguage() : 'en-US');
+    const locale = currentLang === 'zh-CN' ? 'zh-CN' : 'en-US';
+
+    return date.toLocaleDateString(locale, {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -1583,21 +1671,25 @@ function formatTime(isoString) {
 }
 
 function formatFullTime(isoString) {
-    // 验证输入
+    // Validate input
     if (!isoString) {
         console.warn('[formatFullTime] Invalid input:', isoString);
-        return '时间未知';
+        return safeT('errors.time_unknown', {}, 'Unknown time');
     }
 
     const date = new Date(isoString);
 
-    // 检查日期是否有效
+    // Check if date is valid
     if (isNaN(date.getTime())) {
         console.warn('[formatFullTime] Invalid date:', isoString);
-        return '时间格式错误';
+        return safeT('errors.time_format_error', {}, 'Invalid time format');
     }
 
-    return date.toLocaleString('zh-CN', {
+    // Get current language for locale formatting
+    const currentLang = (typeof window.getCurrentLanguage === 'function' ? window.getCurrentLanguage() : 'en-US');
+    const locale = currentLang === 'zh-CN' ? 'zh-CN' : 'en-US';
+
+    return date.toLocaleString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -1722,7 +1814,7 @@ function renderTerminalLog(logEntry) {
         <span class="terminal-timestamp">[${timestamp}]</span>
         <span class="terminal-method terminal-method-${methodClass}">${logEntry.method.padEnd(6)}</span>
         ${statusInfo}
-        <span class="terminal-description">${escapeHtml(logEntry.description)}</span>
+        <span class="terminal-description" data-terminal-url="${escapeHtml(logEntry.url)}" data-terminal-method="${logEntry.method}">${escapeHtml(logEntry.description)}</span>
         <span class="terminal-url">${escapeHtml(logEntry.url)}</span>
     `;
 
@@ -1818,7 +1910,7 @@ function updateTerminalCount() {
 }
 
 function clearTerminalLog() {
-    if (!confirm('确定要清空所有 API 日志吗？')) return;
+    if (!confirm(safeT('api.terminal.confirm_clear'))) return;
 
     terminalLogs.length = 0;
 
@@ -1826,13 +1918,13 @@ function clearTerminalLog() {
         terminalOutput.innerHTML = `
             <div class="terminal-line terminal-welcome">
                 <span class="terminal-prompt">$</span>
-                <span class="terminal-text">API 调用监控已启动...</span>
+                <span class="terminal-text">${safeT('api.terminal.welcome')}</span>
             </div>
         `;
     }
 
     updateTerminalCount();
-    showToast('API 日志已清空', 'success');
+    showToast(safeT('api.terminal.logs_cleared'), 'success');
 }
 
 // Toggle API Notifications
@@ -1844,21 +1936,21 @@ function toggleApiNotifications() {
     if (emailsState.apiNotificationsEnabled) {
         apiNotifyToggleBtn.classList.add('active');
         if (toggleText) {
-            toggleText.textContent = '弹窗通知: 开启';
+            toggleText.textContent = safeT('api.notifications.popup_toggle', {status: safeT('api.notifications.on')});
         }
-        showToast('API 弹窗通知已开启', 'success');
+        showToast(safeT('messages.api_notifications_enabled'), 'success');
         // Save preference to cookie
         setCookie('apiNotificationsEnabled', 'true', 365);
     } else {
         apiNotifyToggleBtn.classList.remove('active');
         if (toggleText) {
-            toggleText.textContent = '弹窗通知: 关闭';
+            toggleText.textContent = safeT('api.notifications.popup_toggle', {status: safeT('api.notifications.off')});
         }
         // Close all existing notifications
         apiNotifications.forEach(notification => {
             closeApiNotification(notification);
         });
-        showToast('API 弹窗通知已关闭', 'info');
+        showToast(safeT('messages.api_notifications_disabled'), 'info');
         // Save preference to cookie
         setCookie('apiNotificationsEnabled', 'false', 365);
     }
@@ -1883,7 +1975,7 @@ function initAutoRefresh() {
 
         // Update text
         if (autoRefreshText) {
-            autoRefreshText.textContent = '自动刷新: 开启';
+            autoRefreshText.textContent = safeT('api.auto_refresh.toggle', {status: safeT('api.auto_refresh.on')});
         }
     } else {
         // Keep auto-refresh disabled
@@ -1896,7 +1988,7 @@ function initAutoRefresh() {
 
         // Update text
         if (autoRefreshText) {
-            autoRefreshText.textContent = '自动刷新: 关闭';
+            autoRefreshText.textContent = safeT('api.auto_refresh.toggle', {status: safeT('api.auto_refresh.off')});
         }
     }
 }
@@ -1905,9 +1997,9 @@ function initAutoRefresh() {
 function initApiNotifications() {
     const toggleText = document.getElementById('apiNotifyToggleText');
 
-    // Read preference from cookie (default: true)
+    // Read preference from cookie (default: false)
     const savedPref = getCookie('apiNotificationsEnabled');
-    const shouldEnable = savedPref !== 'false'; // Enable if not explicitly disabled
+    const shouldEnable = savedPref === 'true'; // Enable only if explicitly enabled
 
     emailsState.apiNotificationsEnabled = shouldEnable;
 
@@ -1919,7 +2011,7 @@ function initApiNotifications() {
 
         // Update text
         if (toggleText) {
-            toggleText.textContent = '弹窗通知: 开启';
+            toggleText.textContent = safeT('api.notifications.popup_toggle', {status: safeT('api.notifications.on')});
         }
     } else {
         // Set button to inactive state
@@ -1929,7 +2021,7 @@ function initApiNotifications() {
 
         // Update text
         if (toggleText) {
-            toggleText.textContent = '弹窗通知: 关闭';
+            toggleText.textContent = safeT('api.notifications.popup_toggle', {status: safeT('api.notifications.off')});
         }
     }
 }
@@ -1951,16 +2043,174 @@ function closeCodesInline(mailId) {
     }
 }
 
-// Load available domains
-loadAvailableDomains();
+// Initialize app after i18n is loaded
+function initializeApp() {
+    console.log('[App] Initializing after i18n loaded');
 
-// Initialize UI
-renderEmailList();
-updateStats();
-updateTerminalCount();
+    // Update any existing API notifications that were created before i18n loaded
+    updateExistingApiNotifications();
 
-// Enable auto-refresh by default
-initAutoRefresh();
+    // Load available domains
+    loadAvailableDomains();
 
-// Initialize API notifications
-initApiNotifications();
+    // Initialize UI
+    renderEmailList();
+    updateStats();
+    updateTerminalCount();
+
+    // Enable auto-refresh by default
+    initAutoRefresh();
+
+    // Initialize API notifications
+    initApiNotifications();
+
+    // Initialize custom prefix toggle
+    initCustomPrefixToggle();
+}
+
+// Update existing API notifications with proper translations
+function updateExistingApiNotifications() {
+    // Update API notification popups
+    document.querySelectorAll('.api-notification-title').forEach(titleElement => {
+        const currentText = titleElement.textContent;
+        // If showing a translation key, update it
+        if (currentText && currentText.startsWith('api.')) {
+            const url = titleElement.getAttribute('data-api-description');
+            if (url) {
+                // Extract method from parent notification
+                const notification = titleElement.closest('.api-notification');
+                if (notification) {
+                    const methodElement = notification.querySelector('.api-notification-method');
+                    if (methodElement) {
+                        const method = methodElement.textContent.trim();
+                        const newDescription = getApiDescription(url, method);
+                        if (newDescription !== currentText) {
+                            titleElement.textContent = newDescription;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Update terminal log descriptions
+    document.querySelectorAll('.terminal-description').forEach(descElement => {
+        const currentText = descElement.textContent;
+        // If showing a translation key, update it
+        if (currentText && currentText.startsWith('api.')) {
+            const url = descElement.getAttribute('data-terminal-url');
+            const method = descElement.getAttribute('data-terminal-method');
+            if (url && method) {
+                const newDescription = getApiDescription(url, method);
+                if (newDescription !== currentText) {
+                    descElement.textContent = newDescription;
+                }
+            }
+        }
+    });
+}
+
+// Wait for i18n to load before initializing
+if (window.isI18nLoaded && window.isI18nLoaded()) {
+    // i18n already loaded
+    initializeApp();
+} else {
+    // Wait for i18n to load
+    window.addEventListener('i18n:loaded', initializeApp, { once: true });
+
+    // Fallback: initialize after 2 seconds if i18n event doesn't fire
+    setTimeout(() => {
+        if (!window.isI18nLoaded || !window.isI18nLoaded()) {
+            console.warn('[App] i18n not loaded after 2s, initializing anyway');
+            initializeApp();
+        }
+    }, 2000);
+}
+
+// ===== Welcome Message =====
+// Check and display welcome message for first-time visitors (global, server-side controlled)
+
+async function checkWelcomeMessage() {
+    try {
+        const response = await fetch('/api/welcome-message/status');
+        const data = await response.json();
+
+        if (data.success && !data.data.dismissed) {
+            // Wait for i18n to be loaded before showing
+            if (window.isI18nLoaded && window.isI18nLoaded()) {
+                showWelcomeMessage();
+            } else {
+                window.addEventListener('i18n:loaded', showWelcomeMessage, { once: true });
+            }
+        }
+    } catch (error) {
+        console.error('[Welcome] Failed to check welcome message status:', error);
+    }
+}
+
+function showWelcomeMessage() {
+    const modal = document.getElementById('welcomeModal');
+    if (!modal) return;
+
+    // Update i18n content (in case it wasn't updated during page load)
+    if (window.updateDOM) {
+        window.updateDOM();
+    }
+
+    // Show modal
+    modal.style.display = 'flex';
+
+    // Add dismiss handler
+    const dismissBtn = document.getElementById('welcomeDismissBtn');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', dismissWelcomeMessage, { once: true });
+    }
+}
+
+async function dismissWelcomeMessage() {
+    try {
+        const response = await fetch('/api/welcome-message/dismiss', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.success) {
+            // Hide modal
+            const modal = document.getElementById('welcomeModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            console.log('[Welcome] Message dismissed successfully');
+        }
+    } catch (error) {
+        console.error('[Welcome] Failed to dismiss welcome message:', error);
+        // Still hide the modal even if API call fails
+        const modal = document.getElementById('welcomeModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+}
+
+// Check welcome message on page load
+checkWelcomeMessage();
+
+// ===== Custom Prefix Mode Select =====
+// Initialize custom prefix mode select functionality
+
+function initCustomPrefixToggle() {
+    const modeSelect = document.getElementById('prefixModeSelect');
+    const inputWrapper = document.getElementById('customPrefixInputWrapper');
+    const prefixInput = document.getElementById('emailPrefix');
+
+    if (!modeSelect || !inputWrapper || !prefixInput) {
+        console.warn('[Custom Prefix] Mode select elements not found');
+        return;
+    }
+
+    // Note: Event listener is already added above in the main initialization
+    // This function just ensures the initial state is correct
+
+    // Initialize as hidden (random mode is selected by default)
+    inputWrapper.style.display = 'none';
+
+    console.log('[Custom Prefix] Mode select initialized');
+}

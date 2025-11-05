@@ -1,13 +1,47 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en-US" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>临时邮箱服务 | Temporary Email Service</title>
-    <meta name="description" content="专业的临时邮箱服务，自动生成一次性电子邮件地址，即时接收验证码">
+    <script>
+        // Detect language from URL path before page loads
+        (function() {
+            const path = window.location.pathname;
+            if (path.startsWith('/zh-cn')) {
+                document.documentElement.lang = 'zh-CN';
+            } else if (path.startsWith('/en')) {
+                document.documentElement.lang = 'en-US';
+            }
+        })();
+    </script>
+    <title data-i18n="pages.home.title">Temporary Email Service</title>
+    <meta name="description" data-i18n="pages.home.description" content="Professional temporary email service with automatic verification code extraction">
+    <meta name="title-key" content="pages.home.title">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+    <!-- Welcome Message Modal -->
+    <div id="welcomeModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="welcome.title">👋 Welcome!</h3>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 15px; line-height: 1.6; color: var(--gray-700); margin-bottom: 20px;" data-i18n="welcome.message">
+                    You can go to the admin page to setup Cloudflare domain and configure your temporary email service.
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="welcomeDismissBtn" class="btn btn-secondary" data-i18n="welcome.dismiss">
+                        ✓ Got it
+                    </button>
+                    <a href="/admin" class="btn btn-primary" style="text-decoration: none;" data-i18n="welcome.go_to_admin">
+                        ⚙️ Go to Admin Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
@@ -22,13 +56,13 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    <span>API</span>
+                    <span data-i18n="footer.docs.api_docs">API</span>
                 </a>
                 <a href="https://github.com/TonnyWong1052/temp-email" target="_blank" class="nav-link">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
                     </svg>
-                    <span>GitHub</span>
+                    <span data-i18n="footer.resources.github">GitHub</span>
                 </a>
             </div>
         </div>
@@ -37,26 +71,26 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1 class="hero-title">专业临时邮箱服务</h1>
-            <p class="hero-subtitle">快速生成一次性电子邮件 · 自动提取验证码 · 安全隐私保护</p>
+            <h1 class="hero-title" data-i18n="pages.home.title">Temporary Email Service</h1>
+            <p class="hero-subtitle" data-i18n="pages.home.subtitle">Fast, secure, disposable emails</p>
             <div class="hero-features">
                 <div class="feature-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    <span>即时生成</span>
+                    <span data-i18n="pages.home.features.instant">Instant Generation</span>
                 </div>
                 <div class="feature-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    <span>安全加密</span>
+                    <span data-i18n="pages.home.features.secure">Secure Encryption</span>
                 </div>
                 <div class="feature-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    <span>智能识别</span>
+                    <span data-i18n="pages.home.features.smart">Smart Recognition</span>
                 </div>
             </div>
         </div>
@@ -72,7 +106,7 @@
                     </svg>
                 </div>
                 <div class="stat-info">
-                    <div class="stat-label">活动邮箱</div>
+                    <div class="stat-label" data-i18n="pages.home.stats.active_emails">Active Emails</div>
                     <div class="stat-value" id="statEmailCount">0</div>
                 </div>
             </div>
@@ -83,7 +117,7 @@
                     </svg>
                 </div>
                 <div class="stat-info">
-                    <div class="stat-label">总收件数</div>
+                    <div class="stat-label" data-i18n="pages.home.stats.total_mails">Total Mails</div>
                     <div class="stat-value" id="statTotalMails">0</div>
                 </div>
             </div>
@@ -96,14 +130,14 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    生成临时邮箱
+                    <span data-i18n="email.generation.title">Generate Temporary Email</span>
                 </h2>
                 <div class="card-actions">
                     <button class="btn btn-secondary btn-sm" id="apiNotifyToggleBtn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
-                        <span id="apiNotifyToggleText">弹窗通知: 开启</span>
+                        <span id="apiNotifyToggleText" data-i18n="api.notifications.popup_toggle" data-i18n-params='{"status": "On"}'>Popup Notifications: On</span>
                     </button>
                 </div>
             </div>
@@ -113,20 +147,36 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
-                        选择域名:
+                        <span data-i18n="email.generation.domain_select_label">Select Domain:</span>
                     </label>
                     <select id="domainSelect" class="domain-select">
-                        <option value="">🎲 随机域名（推荐）</option>
+                        <option value="" data-i18n="email.generation.random_domain">🎲 Random Domain (Recommended)</option>
                         <!-- Domains will be loaded dynamically -->
                     </select>
+                </div>
+                <div class="prefix-input-group">
+                    <label for="prefixModeSelect" class="domain-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                        </svg>
+                        <span data-i18n="email.generation.custom_name_label">Custom Name:</span>
+                    </label>
+                    <select id="prefixModeSelect" class="domain-select">
+                        <option value="random" data-i18n="email.generation.use_random">🎲 Use Random (Recommended)</option>
+                        <option value="custom" data-i18n="email.generation.use_custom">✏️ Use Custom</option>
+                    </select>
+                    <div id="customPrefixInputWrapper" class="custom-prefix-input-wrapper" style="display: none; margin-top: var(--spacing-md);">
+                        <input type="text" id="emailPrefix" class="domain-select" data-i18n-placeholder="email.generation.custom_prefix_placeholder" placeholder="e.g., user123, hello2024" maxlength="20" autocomplete="off">
+                        <p class="prefix-hint" data-i18n="email.generation.custom_prefix_hint">Letters and numbers only</p>
+                    </div>
                 </div>
                 <button class="btn btn-primary btn-large" id="generateBtn">
                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    <span id="generateBtnText">立即生成新邮箱</span>
+                    <span id="generateBtnText" data-i18n="email.generation.generate_button">Generate New Email</span>
                 </button>
-                <p class="generate-hint">您可以同时创建多个临时邮箱地址，选择随机域名将自动分配可用域名</p>
+                <p class="generate-hint" data-i18n="email.generation.generate_hint">You can create multiple temporary email addresses, random domains will be automatically assigned</p>
             </div>
         </section>
 
@@ -137,12 +187,12 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    我的邮箱
+                    <span data-i18n="email.list.title">My Emails</span>
                     <span class="mail-count-badge" id="emailCount">0</span>
                 </h2>
                 <div class="card-actions">
                     <button class="btn btn-secondary" id="autoRefreshBtn">
-                        <span id="autoRefreshText">自动刷新: 关闭</span>
+                        <span id="autoRefreshText" data-i18n="api.auto_refresh.toggle" data-i18n-params='{"status": "Off"}'>Auto Refresh: Off</span>
                     </button>
                 </div>
             </div>
@@ -152,8 +202,8 @@
                         <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
-                        <h3>尚未创建邮箱</h3>
-                        <p>点击上方按钮生成您的第一个临时邮箱地址</p>
+                        <h3 data-i18n="email.list.empty_state_title">No emails created yet</h3>
+                        <p data-i18n="email.list.empty_state_message">Click the button above to generate your first temporary email address</p>
                     </div>
                 </div>
             </div>
@@ -166,7 +216,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    API 调用终端
+                    <span data-i18n="api.terminal.title">API Call Terminal</span>
                     <span class="terminal-count" id="terminalCount">0</span>
                 </h2>
                 <div class="card-actions">
@@ -174,7 +224,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
-                        <span>清空日志</span>
+                        <span data-i18n="api.terminal.clear_logs">Clear Logs</span>
                     </button>
                 </div>
             </div>
@@ -182,7 +232,7 @@
                 <div id="terminalOutput" class="terminal-output">
                     <div class="terminal-line terminal-welcome">
                         <span class="terminal-prompt">$</span>
-                        <span class="terminal-text">API 调用监控已启动...</span>
+                        <span class="terminal-text" data-i18n="api.terminal.welcome">API call monitoring started...</span>
                     </div>
                 </div>
             </div>
@@ -206,14 +256,14 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                             </svg>
-                            <strong>发件人:</strong>
+                            <strong data-i18n="email.details.from">From:</strong>
                             <span id="modalFrom"></span>
                         </div>
                         <div class="mail-meta-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                             </svg>
-                            <strong>时间:</strong>
+                            <strong data-i18n="email.details.time">Time:</strong>
                             <span id="modalDate"></span>
                         </div>
                     </div>
@@ -222,13 +272,13 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 16px; height: 16px;">
                                 <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                             </svg>
-                            <span>提取验证码</span>
+                            <span data-i18n="email.details.extract_codes_button">Extract Verification Codes</span>
                         </button>
                         <div class="codes-header">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                             </svg>
-                            <strong>验证码</strong>
+                            <strong data-i18n="email.details.verification_codes">Verification Codes</strong>
                         </div>
                         <div id="modalCodesContent" class="codes-content"></div>
                     </div>
@@ -237,13 +287,13 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                             </svg>
-                            <strong>邮件内容</strong>
+                            <strong data-i18n="email.details.mail_content">Mail Content</strong>
                             <button class="btn-view-mode" id="viewModeToggle" title="切换显示模式">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                     <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                                     <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                                 </svg>
-                                <span id="viewModeText">HTML</span>
+                                <span id="viewModeText" data-i18n="email.details.view_mode">HTML</span>
                             </button>
                         </div>
                         <div id="modalContentHtml" class="mail-content-html" style="display: block;"></div>
@@ -257,18 +307,18 @@
         <footer class="footer">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h4>关于服务</h4>
-                    <p>提供安全、可靠的临时邮箱服务</p>
+                    <h4 data-i18n="footer.about.title">About Service</h4>
+                    <p data-i18n="footer.about.description">Providing secure and reliable temporary email service</p>
                 </div>
                 <div class="footer-section">
-                    <h4>开发文档</h4>
-                    <a href="/docs" target="_blank">API 文档</a>
-                    <a href="/redoc" target="_blank">ReDoc</a>
+                    <h4 data-i18n="footer.docs.title">Documentation</h4>
+                    <a href="/docs" target="_blank" data-i18n="footer.docs.api_docs">API Documentation</a>
+                    <a href="/redoc" target="_blank" data-i18n="footer.docs.redoc">ReDoc</a>
                 </div>
                 <div class="footer-section">
-                    <h4>更多资源</h4>
-                    <a href="https://github.com/TonnyWong1052/temp-email" target="_blank">GitHub</a>
-                    <a href="#">使用指南</a>
+                    <h4 data-i18n="footer.resources.title">More Resources</h4>
+                    <a href="https://github.com/TonnyWong1052/temp-email" target="_blank" data-i18n="footer.resources.github">GitHub</a>
+                    <a href="#" data-i18n="footer.resources.guide">User Guide</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -276,13 +326,18 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                     </svg>
-                    仅供测试使用，请勿接收敏感或重要信息
+                    <span data-i18n="footer.warning">For testing purposes only, do not receive sensitive or important information</span>
                 </p>
-                <p class="footer-copyright">© 2025 TempMail Pro. All rights reserved.</p>
+                <p class="footer-copyright" data-i18n="footer.copyright">© 2025 TempMail Pro. All rights reserved.</p>
             </div>
         </footer>
     </div>
 
+    <!-- i18n scripts -->
+    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/language-switcher.js"></script>
+    
+    <!-- Main application script -->
     <script src="/static/js/app.js"></script>
 </body>
 </html>

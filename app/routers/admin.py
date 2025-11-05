@@ -88,15 +88,20 @@ async def get_current_user(
 
 
 @router.post("/login", response_model=LoginResponse)
-async def admin_login(request: LoginRequest, response: Response):
+async def admin_login(login_request: LoginRequest, request: Request, response: Response):
     """
     管理員登入
     驗證用戶名和密碼，返回 JWT token
     """
+    from app.i18n.translations import translation_manager
+
+    # 獲取當前語言
+    current_language = getattr(request.state, "language", "zh-CN")
+
     # 驗證用戶憑證
-    if auth_service.authenticate_user(request.username, request.password):
+    if auth_service.authenticate_user(login_request.username, login_request.password):
         # 創建 JWT token
-        access_token = auth_service.create_user_token(request.username)
+        access_token = auth_service.create_user_token(login_request.username)
 
         # 設置 HttpOnly Cookie，供前端頁面（如 logs.html 的 SSE）使用
         response.set_cookie(
@@ -109,17 +114,23 @@ async def admin_login(request: LoginRequest, response: Response):
             path="/",
         )
 
+        # 獲取翻譯訊息
+        success_msg = translation_manager.get_translation("pages.admin.login.messages.success", current_language)
+
         return LoginResponse(
             success=True,
-            message="登入成功",
+            message=success_msg,
             token=access_token,
             token_type="bearer",
             expires_in=settings.jwt_access_token_expire_minutes * 60  # 轉換為秒
         )
     else:
+        # 獲取翻譯訊息
+        error_msg = translation_manager.get_translation("pages.admin.login.messages.invalid_credentials", current_language)
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误"
+            detail=error_msg
         )
 
 
@@ -1095,20 +1106,28 @@ class WriteWranglerRequest(BaseModel):
 
 
 @router.get("/cloudflare/wizard")
-async def get_cloudflare_wizard(current_user: str = Depends(get_current_user)):
+async def get_cloudflare_wizard(request: Request, current_user: str = Depends(get_current_user)):
     """
     获取 Cloudflare 配置向导步骤
     需要登录
     """
+    from app.i18n.translations import translation_manager
+
     try:
-        steps = cloudflare_helper.get_wizard_steps()
+        # 獲取當前語言
+        current_language = getattr(request.state, "language", "zh-CN")
+
+        steps = cloudflare_helper.get_wizard_steps(current_language)
+        success_msg = translation_manager.get_translation("pages.admin.dashboard.wizard.load_success", current_language)
+
         return {
             "success": True,
             "steps": steps,
-            "message": "配置向导加载成功"
+            "message": success_msg
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"加载向导失败: {str(e)}")
+        error_msg = translation_manager.get_translation("pages.admin.dashboard.wizard.load_failed", current_language) if 'current_language' in locals() else "加载向导失败"
+        raise HTTPException(status_code=500, detail=f"{error_msg}: {str(e)}")
 
 
 @router.post("/cloudflare/test-connection")
@@ -1347,7 +1366,8 @@ async def check_deploy_status(current_user: str = Depends(get_current_user)):
 @router.post("/cloudflare/test-and-check-stream")
 async def test_and_check_stream(
     request: Optional[CloudflareTestRequest] = None,
-    current_user: str = Depends(get_current_user)
+    current_user: str = Depends(get_current_user),
+    lang: Optional[str] = None
 ):
     """
     流式检查：逐步执行并实时推送结果 (SSE)
@@ -1357,11 +1377,16 @@ async def test_and_check_stream(
     每个检查阶段完成后立即推送结果给前端。
     """
     import json
+    from app.i18n.translations import translation_manager
+
+    # 获取语言设置
+    current_language = lang if lang in translation_manager.supported_languages else "en-US"
 
     async def event_generator():
         try:
             # ========== 步骤 0: 初始化 ==========
-            data = {"stage": "init", "message": "🚀 开始检查...", "progress": 0}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.init", current_language)
+            data = {"stage": "init", "message": msg, "progress": 0}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
             await asyncio.sleep(0.1)
 
@@ -1405,10 +1430,11 @@ async def test_and_check_stream(
                 return
 
             # ========== 步骤 1: 验证 API Token ==========
-            data = {"stage": "token", "message": "🔑 验证 API Token...", "progress": 20}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.token_verifying", current_language)
+            data = {"stage": "token", "message": msg, "progress": 20}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
-            token_check = await cloudflare_helper._verify_token(api_token)
+            token_check = await cloudflare_helper._verify_token(api_token, current_language)
 
             data = {
                 "stage": "token",
@@ -1432,10 +1458,11 @@ async def test_and_check_stream(
                 # 不返回，继续后续检查
 
             # ========== 步骤 2: 验证 Account ID ==========
-            data = {"stage": "account", "message": "🆔 验证 Account ID...", "progress": 40}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.account_verifying", current_language)
+            data = {"stage": "account", "message": msg, "progress": 40}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
-            account_check = await cloudflare_helper._verify_account(account_id, api_token)
+            account_check = await cloudflare_helper._verify_account(account_id, api_token, current_language)
 
             data = {
                 "stage": "account",
@@ -1459,10 +1486,11 @@ async def test_and_check_stream(
                 # 不返回，继续后续检查
 
             # ========== 步骤 3: 验证 Namespace ID ==========
-            data = {"stage": "namespace", "message": "📦 验证 KV Namespace...", "progress": 60}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.namespace_verifying", current_language)
+            data = {"stage": "namespace", "message": msg, "progress": 60}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
-            namespace_check = await cloudflare_helper._verify_namespace(account_id, namespace_id, api_token)
+            namespace_check = await cloudflare_helper._verify_namespace(account_id, namespace_id, api_token, current_language)
 
             data = {
                 "stage": "namespace",
@@ -1486,13 +1514,14 @@ async def test_and_check_stream(
                 # 不返回，继续后续检查
 
             # ========== 步骤 4: 配置匹配度检查 ==========
-            data = {"stage": "match", "message": "🔗 检查配置匹配度...", "progress": 75}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.match_checking", current_language)
+            data = {"stage": "match", "message": msg, "progress": 75}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
             match_result = await cloudflare_helper.verify_config_match(account_id, namespace_id, api_token)
 
             match_status = "passed" if match_result["match"] else "warning"
-            match_message = "✅ 配置匹配" if match_result["match"] else "⚠️ 配置不匹配"
+            match_message = translation_manager.get_translation("pages.admin.dashboard.check_messages.match_success", current_language) if match_result["match"] else "⚠️ 配置不匹配"
             data = {
                 "stage": "match",
                 "status": match_status,
@@ -1503,7 +1532,8 @@ async def test_and_check_stream(
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
             # ========== 步骤 5: 域名检查（带进度） ==========
-            data = {"stage": "domains", "message": "📧 检查域名配置...", "progress": 85}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.domains_checking", current_language)
+            data = {"stage": "domains", "message": msg, "progress": 85}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
             # 获取域名列表
@@ -1512,9 +1542,10 @@ async def test_and_check_stream(
 
             if zones:
                 num_zones = len(zones)
+                msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.domains_found", current_language, count=num_zones)
                 data = {
                     "stage": "domains",
-                    "message": f"📋 发现 {num_zones} 个域名，开始检查...",
+                    "message": msg,
                     "progress": 87
                 }
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
@@ -1533,9 +1564,16 @@ async def test_and_check_stream(
                     # 推送进度
                     check_count = min(len(zones), 10)
                     current_progress = 87 + int((i + 1) / check_count * 8)  # 87-95
+                    msg = translation_manager.get_translation(
+                        "pages.admin.dashboard.check_messages.domain_checking",
+                        current_language,
+                        current=i+1,
+                        total=check_count,
+                        domain=zone_name
+                    )
                     data = {
                         "stage": "domains",
-                        "message": f"📧 检查域名 {i+1}/{check_count}: {zone_name}",
+                        "message": msg,
                         "progress": current_progress,
                         "current_domain": zone_name,
                         "domain_status": routing_status
@@ -1544,10 +1582,11 @@ async def test_and_check_stream(
 
                 # 域名检查完成
                 check_count = min(len(zones), 10)
+                msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.domains_complete", current_language, count=check_count)
                 data = {
                     "stage": "domains",
                     "status": "passed",
-                    "message": f"✅ 域名检查完成 ({check_count} 个)",
+                    "message": msg,
                     "progress": 95,
                     "result": {"email_routing_status": email_routing_status, "total_zones": len(zones)}
                 }
@@ -1562,7 +1601,8 @@ async def test_and_check_stream(
                 yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
             # ========== 完成 ==========
-            data = {"stage": "done", "message": "🎉 所有检查完成！", "progress": 100, "success": True}
+            msg = translation_manager.get_translation("pages.admin.dashboard.check_messages.all_complete", current_language)
+            data = {"stage": "done", "message": msg, "progress": 100, "success": True}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
         except Exception as e:

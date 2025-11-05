@@ -1,9 +1,20 @@
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Detect language from URL path before page loads
+        (function() {
+            const path = window.location.pathname;
+            if (path.startsWith('/zh-cn')) {
+                document.documentElement.lang = 'zh-CN';
+            } else if (path.startsWith('/en')) {
+                document.documentElement.lang = 'en-US';
+            }
+        })();
+    </script>
     <title>系统管理中心</title>
     <style>
         :root {
@@ -391,11 +402,120 @@
             width: 100%;
             max-width: 420px;
             border: 1px solid #e2e8f0;
+            position: relative;
         }
 
         .login-header {
             text-align: center;
             margin-bottom: 32px;
+        }
+
+        /* Language Switcher for Login Page */
+        .language-switcher-login {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+        }
+
+        .language-switcher-login .lang-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            color: var(--gray-600);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .language-switcher-login .lang-btn:hover {
+            background: white;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .language-switcher-login .lang-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .language-switcher-login .lang-name {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.8125rem;
+        }
+
+        .language-switcher-login .lang-chevron {
+            width: 12px;
+            height: 12px;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .language-switcher-login .lang-btn[aria-expanded="true"] .lang-chevron {
+            transform: rotate(180deg);
+        }
+
+        .language-switcher-login .lang-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 140px;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .language-switcher-login .lang-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .language-switcher-login .lang-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .language-switcher-login .lang-option:last-child {
+            border-bottom: none;
+        }
+
+        .language-switcher-login .lang-option:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .language-switcher-login .lang-flag {
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .language-switcher-login .lang-text {
+            flex: 1;
+            font-weight: 500;
         }
 
         .login-logo {
@@ -1204,27 +1324,160 @@
                 bottom: -22px;
             }
         }
+
+        /* === Language Switcher for Admin === */
+        .language-switcher-admin {
+            position: relative;
+            display: inline-block;
+            margin-right: 12px;
+        }
+
+        .language-switcher-admin .lang-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .language-switcher-admin .lang-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .language-switcher-admin .lang-btn:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .language-switcher-admin .lang-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .language-switcher-admin .lang-name {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.875rem;
+        }
+
+        .language-switcher-admin .lang-chevron {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .language-switcher-admin .lang-btn[aria-expanded="true"] .lang-chevron {
+            transform: rotate(180deg);
+        }
+
+        .language-switcher-admin .lang-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 160px;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .language-switcher-admin .lang-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .language-switcher-admin .lang-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .language-switcher-admin .lang-option:last-child {
+            border-bottom: none;
+        }
+
+        .language-switcher-admin .lang-option:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .language-switcher-admin .lang-flag {
+            font-size: 1.125rem;
+            line-height: 1;
+        }
+
+        .language-switcher-admin .lang-text {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .language-switcher-admin {
+                margin-right: 8px;
+            }
+
+            .language-switcher-admin .lang-btn {
+                padding: 6px 10px;
+            }
+
+            .language-switcher-admin .lang-name span:not(.lang-flag) {
+                display: none;
+            }
+        }
     </style>
+    <!-- i18n Scripts -->
+    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/language-switcher.js"></script>
 </head>
 <body>
     <div id="loginContainer">
         <div class="login-card">
+            <!-- Language Switcher for Login -->
+            <div class="language-switcher-login" id="loginLangSwitcher"></div>
+
             <div class="login-header">
                 <div class="login-logo">⚙️</div>
-                <h1 class="login-title">系统管理中心</h1>
-                <p class="login-subtitle">请登录以管理系统配置</p>
+                <h1 class="login-title" data-i18n="pages.admin.login.page_title">系统管理中心</h1>
+                <p class="login-subtitle" data-i18n="pages.admin.login.page_subtitle">请登录以管理系统配置</p>
             </div>
 
             <div id="loginMessage" class="alert"></div>
 
             <form id="loginForm">
                 <div class="form-group">
-                    <label class="form-label" for="username">用户名</label>
-                    <input type="text" id="username" class="form-input" placeholder="请输入用户名" required autocomplete="username">
+                    <label class="form-label" for="username" data-i18n="pages.admin.login.form.username_label">用户名</label>
+                    <input type="text" id="username" class="form-input" data-i18n-placeholder="pages.admin.login.form.username_placeholder" placeholder="请输入用户名" required autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="password">密码</label>
-                    <input type="password" id="password" class="form-input" placeholder="请输入密码" required autocomplete="current-password">
+                    <label class="form-label" for="password" data-i18n="pages.admin.login.form.password_label">密码</label>
+                    <input type="password" id="password" class="form-input" data-i18n-placeholder="pages.admin.login.form.password_placeholder" placeholder="请输入密码" required autocomplete="current-password">
                 </div>
 
                 <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
@@ -1232,14 +1485,14 @@
                         <svg width="18" height="18" fill="none" stroke="#0284c7" viewBox="0 0 24 24" style="flex-shrink: 0;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <span style="font-weight: 600; color: #0c4a6e; font-size: 14px;">默认管理员账户</span>
+                        <span style="font-weight: 600; color: #0c4a6e; font-size: 14px;" data-i18n="pages.admin.login.default_account.title">默认管理员账户</span>
                     </div>
                     <div style="font-size: 13px; color: #0c4a6e; line-height: 1.6; margin-left: 26px;">
                         <div style="margin-bottom: 4px;">
-                            用户名：<code style="background: white; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; color: #0284c7; font-weight: 600;">admin</code>
+                            <span data-i18n="pages.admin.login.default_account.username_label">用户名：</span><code style="background: white; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; color: #0284c7; font-weight: 600;">admin</code>
                         </div>
                         <div>
-                            密码：<code style="background: white; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; color: #0284c7; font-weight: 600;">admin123</code>
+                            <span data-i18n="pages.admin.login.default_account.password_label">密码：</span><code style="background: white; padding: 2px 8px; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; color: #0284c7; font-weight: 600;">admin123</code>
                         </div>
                     </div>
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #bae6fd;">
@@ -1247,12 +1500,12 @@
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                             </svg>
-                            <span>生产环境请务必修改默认密码</span>
+                            <span data-i18n="pages.admin.login.default_account.warning">生产环境请务必修改默认密码</span>
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%; justify-content: center;">
+                <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%; justify-content: center;" data-i18n="pages.admin.login.form.login_button">
                     登录
                 </button>
             </form>
@@ -1261,7 +1514,7 @@
 
     <div id="configContainer">
         <!-- Mobile Menu Toggle Button -->
-        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="開啟選單">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" data-i18n-title="pages.admin.dashboard.buttons.open_menu" aria-label="開啟選單">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
@@ -1273,7 +1526,7 @@
         <aside class="sidebar" id="sidebar">
             <div class="logo">
                 <div class="logo-icon">⚙️</div>
-                <span class="logo-text">系统管理</span>
+                <span class="logo-text" data-i18n="pages.admin.dashboard.sidebar.logo">系统管理</span>
             </div>
             <ul class="nav-menu">
                 <li class="nav-item">
@@ -1281,7 +1534,7 @@
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
                         </svg>
-                        服务器配置
+                        <span data-i18n="pages.admin.dashboard.sidebar.server_config">服务器配置</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1289,7 +1542,7 @@
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
                         </svg>
-                        cloudflare域名配置
+                        <span data-i18n="pages.admin.dashboard.sidebar.cloudflare_config">Cloudflare 域名配置</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1297,7 +1550,7 @@
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                         </svg>
-                        验证码智能提取
+                        <span data-i18n="pages.admin.dashboard.sidebar.llm_config">验证码智能提取</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1305,7 +1558,7 @@
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        实时日志 🔗
+                        <span data-i18n="pages.admin.dashboard.sidebar.realtime_logs">实时日志 🔗</span>
                     </a>
                 </li>
             </ul>
@@ -1313,25 +1566,28 @@
 
         <main class="main-content">
             <div class="topbar">
-                <h1 class="topbar-title">系统配置管理</h1>
+                <h1 class="topbar-title" data-i18n="pages.admin.dashboard.title">系统配置管理</h1>
                 <div class="topbar-actions">
+                    <!-- Language Switcher -->
+                    <div class="language-switcher-admin" id="langSwitcherContainer"></div>
+
                     <button class="btn btn-primary" id="saveBtn">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
                         </svg>
-                        保存配置
+                        <span data-i18n="pages.admin.dashboard.buttons.save_config">保存配置</span>
                     </button>
                     <button class="btn btn-secondary" id="reloadBtn">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                         </svg>
-                        重载配置
+                        <span data-i18n="pages.admin.dashboard.buttons.reload_config">重载配置</span>
                     </button>
                     <button class="btn btn-ghost" id="logoutBtn">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        登出
+                        <span data-i18n="pages.admin.dashboard.buttons.logout">登出</span>
                     </button>
                 </div>
             </div>
@@ -1346,31 +1602,31 @@
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
                                 </svg>
-                                服务器配置
+                                <span data-i18n="pages.admin.dashboard.sections.server.title">服务器配置</span>
                             </h2>
                         </div>
                         <div class="card-body">
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label" for="port">
-                                        端口 <span class="badge badge-warning">需重启</span>
+                                        <span data-i18n="pages.admin.dashboard.sections.server.port_label">端口</span> <span class="badge badge-warning" data-i18n="pages.admin.dashboard.sections.server.restart_required">需重启</span>
                                     </label>
                                     <input type="number" id="port" class="form-input" placeholder="1234">
-                                    <div class="form-hint">服务器监听端口</div>
+                                    <div class="form-hint" data-i18n="pages.admin.dashboard.sections.server.port_hint">服务器监听端口</div>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="host">
-                                        主机地址 <span class="badge badge-warning">需重启</span>
+                                        <span data-i18n="pages.admin.dashboard.sections.server.host_label">主机地址</span> <span class="badge badge-warning" data-i18n="pages.admin.dashboard.sections.server.restart_required">需重启</span>
                                     </label>
                                     <input type="text" id="host" class="form-input" placeholder="0.0.0.0">
-                                    <div class="form-hint">服务器绑定地址</div>
+                                    <div class="form-hint" data-i18n="pages.admin.dashboard.sections.server.host_hint">服务器绑定地址</div>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <div class="checkbox-group">
                                     <input type="checkbox" id="reload" class="checkbox">
                                     <label class="form-label" for="reload" style="margin: 0;">
-                                        开发模式自动重载 <span class="badge badge-warning">需重启</span>
+                                        <span data-i18n="pages.admin.dashboard.sections.server.reload_label">开发模式自动重载</span> <span class="badge badge-warning" data-i18n="pages.admin.dashboard.sections.server.restart_required">需重启</span>
                                     </label>
                                 </div>
                             </div>
@@ -1378,20 +1634,20 @@
                             <!-- 管理员账户配置 -->
                             <div style="border-top: 1px solid var(--gray-200); margin-top: 24px; padding-top: 24px;">
                                 <h3 style="font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px;">
-                                    管理员账户 <span class="badge badge-warning">需重启</span>
+                                    <span data-i18n="pages.admin.dashboard.sections.server.admin_account">管理员账户</span> <span class="badge badge-warning" data-i18n="pages.admin.dashboard.sections.server.restart_required">需重启</span>
                                 </h3>
-                                <div class="alert alert-warning show">
+                                <div class="alert alert-warning show" data-i18n="pages.admin.dashboard.sections.server.warning_relogin">
                                     ⚠️ 修改管理员账户后需要重新登录
                                 </div>
                                 <div class="form-grid">
                                     <div class="form-group">
-                                        <label class="form-label" for="adminUsername">管理员用户名</label>
+                                        <label class="form-label" for="adminUsername" data-i18n="pages.admin.dashboard.sections.server.admin_username">管理员用户名</label>
                                         <input type="text" id="adminUsername" class="form-input" placeholder="admin">
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label" for="adminPassword">管理员密码</label>
-                                        <input type="password" id="adminPassword" class="form-input" placeholder="留空则不修改">
-                                        <div class="form-hint">留空表示不修改密码</div>
+                                        <label class="form-label" for="adminPassword" data-i18n="pages.admin.dashboard.sections.server.admin_password">管理员密码</label>
+                                        <input type="password" id="adminPassword" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.server.password_placeholder" placeholder="留空则不修改">
+                                        <div class="form-hint" data-i18n="pages.admin.dashboard.sections.server.password_hint">留空表示不修改密码</div>
                                     </div>
                                 </div>
                             </div>
@@ -1407,24 +1663,25 @@
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/>
                                 </svg>
-                                Cloudflare 配置 <span class="badge badge-info">即时生效</span>
+                                <span data-i18n="pages.admin.dashboard.sections.cloudflare.title">Cloudflare 配置</span> <span class="badge badge-info" data-i18n="pages.admin.dashboard.sections.cloudflare.instant_effect">即时生效</span>
                             </h2>
                             <button class="btn btn-ghost" id="showFlowBtn"
                                     style="padding: 6px 12px; font-size: 13px; text-decoration: none;"
+                                    data-i18n-title="pages.admin.dashboard.buttons.show_flow"
                                     title="查看邮件转发工作原理">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                工作原理
+                                <span data-i18n="pages.admin.dashboard.buttons.working_principle">工作原理</span>
                             </button>
                         </div>
                         <div class="card-body">
                             <!-- 按钮组 -->
                             <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-                                <button class="btn btn-secondary" id="wizardBtn" style="flex: 1; min-width: 150px;">
+                                <button class="btn btn-secondary" id="wizardBtn" style="flex: 1; min-width: 150px;" data-i18n="pages.admin.dashboard.buttons.wizard">
                                     📖 配置向导
                                 </button>
-                                <button class="btn btn-primary" id="testConnectionBtn" style="flex: 1; min-width: 200px;">
+                                <button class="btn btn-primary" id="testConnectionBtn" style="flex: 1; min-width: 200px;" data-i18n="pages.admin.dashboard.buttons.test_connection">
                                     🔍 测试连接并检查状态
                                 </button>
                             </div>
@@ -1433,34 +1690,34 @@
                             <div id="cfHelperResult" class="alert" style="display: none;"></div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label class="form-label" for="cfAccountId">Cloudflare 账户 ID</label>
-                                    <input type="text" id="cfAccountId" class="form-input" placeholder="your-account-id">
+                                    <label class="form-label" for="cfAccountId" data-i18n="pages.admin.dashboard.sections.cloudflare.account_id_label">Cloudflare 账户 ID</label>
+                                    <input type="text" id="cfAccountId" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.cloudflare.account_id_placeholder" placeholder="your-account-id">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label" for="cfKvNamespaceId">KV Namespace ID</label>
-                                    <input type="text" id="cfKvNamespaceId" class="form-input" placeholder="your-namespace-id">
+                                    <label class="form-label" for="cfKvNamespaceId" data-i18n="pages.admin.dashboard.sections.cloudflare.namespace_id_label">KV Namespace ID</label>
+                                    <input type="text" id="cfKvNamespaceId" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.cloudflare.namespace_id_placeholder" placeholder="your-namespace-id">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="cfApiToken">Cloudflare API Token</label>
-                                <input type="password" id="cfApiToken" class="form-input" placeholder="your-api-token">
+                                <label class="form-label" for="cfApiToken" data-i18n="pages.admin.dashboard.sections.cloudflare.api_token_label">Cloudflare API Token</label>
+                                <input type="password" id="cfApiToken" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.cloudflare.api_token_placeholder" placeholder="your-api-token">
                                 <div class="form-hint">
-                                    <strong>🔑 所需权限：</strong><br>
-                                    • <strong>Account Settings: Read</strong> - 读取账户信息<br>
-                                    • <strong>Workers KV Storage: Read</strong> - 读取 KV 数据<br>
-                                    • <strong>Zone: Read</strong> - 读取域名列表（域名检查功能）<br>
-                                    • <strong>Email Routing Rules: Read</strong> - 读取 Email Routing 配置（域名检查功能）<br>
-                                    <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" style="color: #3498db; text-decoration: none;">📖 创建 API Token →</a>
+                                    <strong data-i18n="pages.admin.dashboard.sections.cloudflare.permissions_required">🔑 所需权限：</strong><br>
+                                    • <strong>Account Settings: Read</strong> - <span data-i18n="pages.admin.dashboard.sections.cloudflare.permission_account_read">读取账户信息</span><br>
+                                    • <strong>Workers KV Storage: Read</strong> - <span data-i18n="pages.admin.dashboard.sections.cloudflare.permission_kv_read">读取 KV 数据</span><br>
+                                    • <strong>Zone: Read</strong> - <span data-i18n="pages.admin.dashboard.sections.cloudflare.permission_zone_read">读取域名列表（域名检查功能）</span><br>
+                                    • <strong>Email Routing Rules: Read</strong> - <span data-i18n="pages.admin.dashboard.sections.cloudflare.permission_email_read">读取 Email Routing 配置（域名检查功能）</span><br>
+                                    <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" style="color: #3498db; text-decoration: none;" data-i18n="pages.admin.dashboard.sections.cloudflare.create_token_link">📖 创建 API Token →</a>
                                 </div>
                             </div>
 
                             <!-- 配置检查器提示信息 -->
                             <div class="alert alert-info show" style="margin-top: 16px;">
-                                <div style="font-weight: 600; margin-bottom: 6px;">💡 关于配置检查器</div>
-                                <div style="font-size: 13px; line-height: 1.6;">
-                                    • 即使检查器显示错误，如果您的配置正确，<strong>功能可能仍然正常工作</strong><br>
-                                    • 这通常是因为 Docker 环境变量未正确挂载或权限问题导致检查器无法读取配置<br>
-                                    • <strong>建议</strong>：先实际测试功能（生成邮箱并尝试接收邮件），如果功能正常，可以忽略检查器警告
+                                <div style="font-weight: 600; margin-bottom: 6px;" data-i18n="pages.admin.dashboard.sections.cloudflare.checker_info_title">💡 关于配置检查器</div>
+                                <div style="font-size: 13px; line-height: 1.6;" id="checker-info-content">
+                                    <span data-i18n="pages.admin.dashboard.sections.cloudflare.checker_info_line1">• 即使检查器显示错误，如果您的配置正确，<strong>功能可能仍然正常工作</strong></span><br>
+                                    <span data-i18n="pages.admin.dashboard.sections.cloudflare.checker_info_line2">• 这通常是因为 Docker 环境变量未正确挂载或权限问题导致检查器无法读取配置</span><br>
+                                    <span data-i18n="pages.admin.dashboard.sections.cloudflare.checker_info_line3">• <strong>建议</strong>：先实际测试功能（生成邮箱并尝试接收邮件），如果功能正常，可以忽略检查器警告</span>
                                 </div>
                             </div>
                         </div>
@@ -1472,29 +1729,29 @@
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                                 </svg>
-                                域名管理 <span class="badge badge-info">即时生效</span>
+                                <span data-i18n="pages.admin.dashboard.sections.domains.title">域名管理</span> <span class="badge badge-info" data-i18n="pages.admin.dashboard.sections.cloudflare.instant_effect">即时生效</span>
                             </h2>
                         </div>
                         <div class="card-body">
                             <div class="form-group" style="display: none;">
                                 <div class="checkbox-group">
                                     <input type="checkbox" id="enableCustomDomains" class="checkbox" checked>
-                                    <label class="form-label" for="enableCustomDomains" style="margin: 0;">启用自定义域名</label>
+                                    <label class="form-label" for="enableCustomDomains" style="margin: 0;" data-i18n="pages.admin.dashboard.sections.domains.enable_custom">启用自定义域名</label>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="customDomains">自定义域名列表</label>
-                                <textarea id="customDomains" class="form-input" placeholder="example.com
+                                <label class="form-label" for="customDomains" data-i18n="pages.admin.dashboard.sections.domains.custom_domains_label">自定义域名列表</label>
+                                <textarea id="customDomains" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.domains.custom_domains_placeholder" placeholder="example.com
 your-domain.com
 test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"></textarea>
-                                <div class="form-hint">每行输入一个域名（自动使用 Cloudflare KV）<br>⚠️ 注意：域名必须已添加到您的 Cloudflare 账户中并完成 Email Routing 配置</div>
+                                <div class="form-hint" data-i18n="pages.admin.dashboard.sections.domains.custom_domains_hint">每行输入一个域名（自动使用 Cloudflare KV）<br>⚠️ 注意：域名必须已添加到您的 Cloudflare 账户中并完成 Email Routing 配置</div>
                             </div>
                             <div class="form-group">
                                 <div class="checkbox-group">
                                     <input type="checkbox" id="enableBuiltinDomains" class="checkbox">
-                                    <label class="form-label" for="enableBuiltinDomains" style="margin: 0;">启用内置域名</label>
+                                    <label class="form-label" for="enableBuiltinDomains" style="margin: 0;" data-i18n="pages.admin.dashboard.sections.domains.enable_builtin">启用内置域名</label>
                                 </div>
-                                <div class="form-hint" style="margin-left: 28px;">20 个预设的临时邮箱域名（自动使用外部 API）</div>
+                                <div class="form-hint" style="margin-left: 28px;" data-i18n="pages.admin.dashboard.sections.domains.builtin_domains_hint">20 个预设的临时邮箱域名（自动使用外部 API）</div>
                             </div>
                         </div>
                     </div>
@@ -1507,13 +1764,13 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                                 </svg>
-                                验证码智能提取 <span class="badge badge-info">即时生效</span>
+                                <span data-i18n="pages.admin.dashboard.sections.llm.title">验证码智能提取</span> <span class="badge badge-info" data-i18n="pages.admin.dashboard.sections.llm.instant_effect">即时生效</span>
                             </h2>
                             <a href="/docs#/email/get_codes_api_email__token__codes_get" target="_blank" class="btn btn-ghost" style="padding: 6px 12px; font-size: 13px; text-decoration: none;">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
-                                API 文档
+                                <span data-i18n="pages.admin.dashboard.sections.llm.api_docs">API 文档</span>
                             </a>
                         </div>
                         <div class="card-body">
@@ -1521,54 +1778,58 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                             <div class="form-group" style="display: none;">
                                 <div class="checkbox-group">
                                     <input type="checkbox" id="useLlmExtraction" class="checkbox" checked>
-                                    <label class="form-label" for="useLlmExtraction" style="margin: 0;">启用 LLM 验证码提取</label>
+                                    <label class="form-label" for="useLlmExtraction" style="margin: 0;" data-i18n="pages.admin.dashboard.sections.llm.enable_llm">启用 LLM 验证码提取</label>
                                 </div>
-                                <div class="form-hint" style="margin-left: 28px;">使用 AI 模型智能识别验证码</div>
+                                <div class="form-hint" style="margin-left: 28px;" data-i18n="pages.admin.dashboard.sections.llm.enable_llm_hint">使用 AI 模型智能识别验证码</div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="openaiApiKey">OpenAI API Key</label>
-                                <input type="password" id="openaiApiKey" class="form-input" placeholder="sk-xxx 或 ak-xxx">
+                                <label class="form-label" for="openaiApiKey" data-i18n="pages.admin.dashboard.sections.llm.api_key_label">OpenAI API Key</label>
+                                <input type="password" id="openaiApiKey" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.llm.api_key_placeholder" placeholder="sk-xxx 或 ak-xxx">
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="openaiApiBase">API Base URL</label>
-                                <input type="text" id="openaiApiBase" class="form-input" placeholder="https://api.openai.com/v1">
-                                <div class="form-hint">自定义 API 端点（支持兼容服务）</div>
+                                <label class="form-label" for="openaiApiBase" data-i18n="pages.admin.dashboard.sections.llm.api_base_label">API Base URL</label>
+                                <input type="text" id="openaiApiBase" class="form-input" data-i18n-placeholder="pages.admin.dashboard.sections.llm.api_base_placeholder" placeholder="https://api.openai.com/v1">
+                                <div class="form-hint" data-i18n="pages.admin.dashboard.sections.llm.api_base_hint">自定义 API 端点（支持兼容服务）</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="openaiModel">
-                                    模型名称
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.model_label">模型名称</span>
                                     <button type="button" class="btn btn-ghost" id="detectModelsBtn"
                                             style="margin-left: 8px; padding: 4px 10px; font-size: 12px;"
+                                            data-i18n="pages.admin.dashboard.buttons.detect_models"
+                                            data-i18n-title="pages.admin.dashboard.sections.llm.model_label"
                                             title="从 API 端点获取可用模型列表">
                                         🔍 自动检测
                                     </button>
                                 </label>
                                 <div style="position: relative;">
                                     <select id="openaiModelSelect" class="form-input" style="display: none;">
-                                        <option value="">-- 从下拉选择或切换到手动输入 --</option>
+                                        <option value="" data-i18n="pages.admin.dashboard.sections.llm.model_select_placeholder">-- 从下拉选择或切换到手动输入 --</option>
                                     </select>
                                     <input type="text" id="openaiModel" class="form-input"
+                                           data-i18n-placeholder="pages.admin.dashboard.sections.llm.model_input_placeholder"
                                            placeholder="gpt-3.5-turbo（手动输入）">
                                     <button type="button" id="toggleModelInput" class="btn btn-ghost"
                                             style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 4px 8px; font-size: 12px;"
+                                            data-i18n-title="pages.admin.dashboard.sections.llm.model_toggle_title"
                                             title="切换输入方式">
-                                        📋 切换
+                                        <span data-i18n="pages.admin.dashboard.sections.llm.model_toggle_button">📋 切换</span>
                                     </button>
                                 </div>
-                                <div class="form-hint" id="modelHint">
+                                <div class="form-hint" id="modelHint" data-i18n="pages.admin.dashboard.sections.llm.model_hint">
                                     手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="defaultCodeExtractionMethod">
-                                    前端默认提取方法
-                                    <span class="badge badge-info">前端默认</span>
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.default_method_label">前端默认提取方法</span>
+                                    <span class="badge badge-info" data-i18n="pages.admin.dashboard.sections.llm.default_method_badge">前端默认</span>
                                 </label>
                                 <select id="defaultCodeExtractionMethod" class="form-input" style="cursor: pointer;">
-                                    <option value="llm">🤖 LLM 智能提取（AI 分析）</option>
-                                    <option value="pattern">📌 模式训练提取（基于学习）</option>
+                                    <option value="llm" data-i18n="pages.admin.dashboard.sections.llm.method_llm">🤖 LLM 智能提取（AI 分析）</option>
+                                    <option value="pattern" data-i18n="pages.admin.dashboard.sections.llm.method_pattern">📌 模式训练提取（基于学习）</option>
                                 </select>
-                                <div class="form-hint">
+                                <div class="form-hint" data-i18n="pages.admin.dashboard.sections.llm.default_method_hint">
                                     设置前端调用 API 时的默认提取方法。LLM 模式更智能但需要 API Key，模式训练基于管理员学习的规则，成本更低。
                                 </div>
                             </div>
@@ -1581,49 +1842,50 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
-                                模式训练 <span class="badge badge-info">即时生效</span>
+                                <span data-i18n="pages.admin.dashboard.sections.llm.pattern_training_title">模式训练</span> <span class="badge badge-info" data-i18n="pages.admin.dashboard.sections.llm.instant_effect">即时生效</span>
                             </h2>
                         </div>
                         <div class="card-body">
-                            <div class="alert alert-info show">
+                            <div class="alert alert-info show" data-i18n="pages.admin.dashboard.sections.llm.pattern_training_info">
                                 ℹ️ 粘贴邮件样本，选中验证码文本后点击「学习模式」，系统会自动识别关键词并保存提取规则
                             </div>
                             
                             <!-- 邮件样本输入 -->
                             <div class="form-group">
-                                <label class="form-label" for="emailSample">邮件样本</label>
+                                <label class="form-label" for="emailSample" data-i18n="pages.admin.dashboard.sections.llm.email_sample_label">邮件样本</label>
                                 <textarea id="emailSample" class="form-input"
+                                          data-i18n-placeholder="pages.admin.dashboard.sections.llm.email_sample_placeholder"
                                           placeholder="粘贴邮件内容，然后选中验证码进行训练...&#10;&#10;例如：&#10;您的验证码是：123456&#10;有效期为5分钟"
                                           style="min-height: 200px; font-family: monospace; font-size: 13px;"></textarea>
                                 <div class="form-hint">
-                                    💡 <strong>操作步骤：</strong>
-                                    ① 粘贴邮件内容到上方文本框 →
-                                    ② 使用鼠标拖动选中验证码文本（例如 <code>123456</code>）→
-                                    ③ 「📌 学习选中的验证码模式」按钮会自动激活 →
-                                    ④ 点击按钮完成训练
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.sample_hint_title">💡 <strong>操作步骤：</strong></span>
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.sample_hint_step1">① 粘贴邮件内容到上方文本框 →</span>
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.sample_hint_step2">② 使用鼠标拖动选中验证码文本（例如 <code>123456</code>）→</span>
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.sample_hint_step3">③ 「📌 学习选中的验证码模式」按钮会自动激活 →</span>
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.sample_hint_step4">④ 点击按钮完成训练</span>
                                 </div>
                             </div>
                             
                             <!-- 操作按钮 -->
                             <div class="form-group" style="display: flex; gap: 12px;">
-                                <button id="learnPatternBtn" class="btn btn-primary" disabled>
+                                <button id="learnPatternBtn" class="btn btn-primary" disabled data-i18n="pages.admin.dashboard.sections.llm.learn_button">
                                     📌 学习选中的验证码模式
                                 </button>
-                                <button id="clearSampleBtn" class="btn btn-secondary">
+                                <button id="clearSampleBtn" class="btn btn-secondary" data-i18n="pages.admin.dashboard.sections.llm.clear_button">
                                     🗑️ 清空
                                 </button>
                             </div>
-                            
+
                             <!-- 已学习模式列表 -->
                             <div class="form-group">
                                 <label class="form-label">
-                                    已学习的模式
-                                    <button class="btn btn-ghost" style="margin-left: 12px; padding: 4px 12px; font-size: 12px;" onclick="loadPatterns()">
+                                    <span data-i18n="pages.admin.dashboard.sections.llm.learned_patterns_label">已学习的模式</span>
+                                    <button class="btn btn-ghost" style="margin-left: 12px; padding: 4px 12px; font-size: 12px;" onclick="loadPatterns()" data-i18n="pages.admin.dashboard.sections.llm.reload_button">
                                         🔄 重新加载
                                     </button>
                                 </label>
                                 <div id="patternsList" style="margin-top: 12px;">
-                                    <div style="text-align: center; padding: 20px; color: var(--gray-500);">
+                                    <div style="text-align: center; padding: 20px; color: var(--gray-500);" data-i18n="pages.admin.dashboard.sections.llm.loading_patterns">
                                         加载中...
                                     </div>
                                 </div>
@@ -1639,7 +1901,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
     <div id="wizardModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">📖 Cloudflare 配置向导</h3>
+                <h3 class="modal-title" id="wizardModalTitle">📖 Cloudflare 配置向导</h3>
                 <button class="modal-close" onclick="closeWizardModal()">✕</button>
             </div>
             <div class="modal-body" id="wizardSteps">
@@ -1652,7 +1914,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
     <div id="manualConfigModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
-                <h3 class="modal-title">📝 手动部署配置说明</h3>
+                <h3 class="modal-title" id="manualConfigModalTitle">📝 手动部署配置说明</h3>
                 <button class="modal-close" onclick="closeManualConfigModal()">✕</button>
             </div>
             <div class="modal-body" id="manualConfigContent">
@@ -1665,7 +1927,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
     <div id="flowDiagramModal" class="modal">
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
-                <h3 class="modal-title">📧 邮件转发工作原理</h3>
+                <h3 class="modal-title" id="flowDiagramModalTitle">📧 邮件转发工作原理</h3>
                 <button class="modal-close" onclick="closeFlowDiagramModal()">✕</button>
             </div>
             <div class="modal-body">
@@ -1943,7 +2205,8 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
             const btn = document.getElementById('loginBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> 登录中...';
+            const loggingInText = window.t ? window.t('pages.admin.login.form.logging_in') : '登录中...';
+            btn.innerHTML = '<span class="loading"></span> ' + loggingInText;
             btn.disabled = true;
 
             try {
@@ -1961,12 +2224,14 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 if (response.ok && data.success) {
                     // 保存 JWT 到 localStorage
                     localStorage.setItem('admin_token', data.token);
-                    showMessage(loginMessage, '登录成功！', 'success');
+                    const successMsg = window.t ? window.t('pages.admin.login.messages.success') : '登录成功！';
+                    showMessage(loginMessage, successMsg, 'success');
                     await loadConfig();
                     loginContainer.style.display = 'none';
                     configContainer.style.display = 'block';
                 } else {
-                    showMessage(loginMessage, data.detail || '登录失败', 'error');
+                    const failedMsg = window.t ? window.t('pages.admin.login.messages.failed') : '登录失败';
+                    showMessage(loginMessage, data.detail || failedMsg, 'error');
                 }
             } catch (error) {
                 showMessage(loginMessage, '网络错误: ' + error.message, 'error');
@@ -2105,10 +2370,10 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             // 如果当前是手动输入模式，想切换到下拉模式，需要先有模型列表
             if (!isSelectMode && availableModels.length === 0) {
                 modelHint.style.color = '#e74c3c';
-                modelHint.textContent = '⚠️ 请先点击「自动检测」加载模型列表';
+                modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_no_models');
                 setTimeout(() => {
                     modelHint.style.color = '';
-                    modelHint.textContent = '手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择';
+                    modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_default');
                 }, 3000);
                 return;
             }
@@ -2132,7 +2397,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 modelInput.style.display = 'block';
                 modelSelect.style.display = 'none';
                 this.textContent = '📋 下拉选择';
-                modelHint.textContent = '手动输入模型名称，或点击「自动检测」从 API 加载可用模型列表';
+                modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_manual_mode');
 
                 // 同步当前值
                 if (modelSelect.value) {
@@ -2162,29 +2427,29 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             // 验证必需参数
             if (!apiBase) {
                 modelHint.style.color = '#e74c3c';
-                modelHint.textContent = '⚠️ 请先填写 API Base URL';
+                modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_no_api_base');
                 setTimeout(() => {
                     modelHint.style.color = '';
-                    modelHint.textContent = '手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择';
+                    modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_default');
                 }, 3000);
                 return;
             }
 
             if (!apiKey) {
                 modelHint.style.color = '#e74c3c';
-                modelHint.textContent = '⚠️ 请先填写 API Key';
+                modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_no_api_key');
                 setTimeout(() => {
                     modelHint.style.color = '';
-                    modelHint.textContent = '手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择';
+                    modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_default');
                 }, 3000);
                 return;
             }
 
             // 显示加载状态
             btn.disabled = true;
-            btn.innerHTML = '⏳ 检测中...';
+            btn.innerHTML = '⏳ ' + window.t('pages.admin.dashboard.loading.detecting');
             modelHint.style.color = '#3498db';
-            modelHint.textContent = '🔍 正在从 API 获取模型列表...';
+            modelHint.textContent = window.t('pages.admin.dashboard.loading.fetching_models');
 
             try {
                 const token = localStorage.getItem('admin_token');
@@ -2247,22 +2512,26 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                     // API 返回失败
                     availableModels = [];
                     modelHint.style.color = '#e74c3c';
-                    modelHint.textContent = `❌ ${result.message || '无法获取模型列表'}`;
+                    modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_detect_failed', {
+                        message: result.message || '无法获取模型列表'
+                    });
 
                     setTimeout(() => {
                         modelHint.style.color = '';
-                        modelHint.textContent = '手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择';
+                        modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_default');
                     }, 5000);
                 }
             } catch (error) {
                 console.error('检测模型失败:', error);
                 availableModels = [];
                 modelHint.style.color = '#e74c3c';
-                modelHint.textContent = `❌ 检测失败: ${error.message}`;
+                modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_detect_failed', {
+                    message: `检测失败: ${error.message}`
+                });
 
                 setTimeout(() => {
                     modelHint.style.color = '';
-                    modelHint.textContent = '手动输入模型名称，或点击「自动检测」加载模型列表后切换到下拉选择';
+                    modelHint.textContent = window.t('pages.admin.dashboard.sections.llm.model_hint_default');
                 }, 5000);
             } finally {
                 // 恢復按鈕狀態
@@ -2275,7 +2544,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         document.getElementById('saveBtn').addEventListener('click', async () => {
             const btn = document.getElementById('saveBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> 保存中...';
+            btn.innerHTML = '<span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.saving');
             btn.disabled = true;
 
             try {
@@ -2346,7 +2615,8 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
                 const token = localStorage.getItem('admin_token');
                 if (!token) {
-                    showMessage(message, '❌ 请先登录', 'error');
+                    const pleaseLoginMsg = window.t ? window.t('pages.admin.login.messages.please_login') : '❌ 请先登录';
+                    showMessage(message, pleaseLoginMsg, 'error');
                     return;
                 }
 
@@ -2378,7 +2648,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         document.getElementById('reloadBtn').addEventListener('click', async () => {
             const btn = document.getElementById('reloadBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> 重载中...';
+            btn.innerHTML = '<span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.reloading');
             btn.disabled = true;
 
             try {
@@ -2430,7 +2700,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
         document.getElementById('wizardBtn').addEventListener('click', async () => {
             const btn = document.getElementById('wizardBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="loading"></span> 加载中...';
+            btn.innerHTML = '<span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.loading');
             btn.disabled = true;
 
             try {
@@ -2462,7 +2732,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             const resultDiv = document.getElementById('cfHelperResult');
             const originalText = btn.innerHTML;
 
-            btn.innerHTML = '<span class="loading"></span> 检查中...';
+            btn.innerHTML = '<span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.checking');
             btn.disabled = true;
             resultDiv.style.display = 'block';
             resultDiv.className = 'alert alert-info show';
@@ -2500,8 +2770,11 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 创建 EventSource 进行流式通信
                 const url = `/admin/cloudflare/test-and-check-stream?${params}`;
 
+                // 获取当前语言
+                const currentLang = window.getCurrentLanguage ? window.getCurrentLanguage() : 'en-US';
+
                 // 使用 fetch + ReadableStream 替代 EventSource (因为需要 POST 和 Auth header)
-                const response = await fetch('/admin/cloudflare/test-and-check-stream', {
+                const response = await fetch(`/admin/cloudflare/test-and-check-stream?lang=${encodeURIComponent(currentLang)}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2566,7 +2839,8 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
                                     // 显示最终摘要
                                     setTimeout(() => {
-                                        messages.push('\n✅ 检查完成！所有配置正常。');
+                                        const finalMsg = window.t('pages.admin.dashboard.check_messages.check_complete_success');
+                                        messages.push('\n' + finalMsg);
                                         messageContainer.textContent = messages.join('\n');
                                     }, 300);
                                     break;
@@ -2707,7 +2981,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             }
 
             // 显示载入状态
-            showCreateNamespaceModal('🔄 正在创建 KV Namespace...', 'info');
+            showCreateNamespaceModal(window.t('pages.admin.dashboard.loading.creating_namespace'), 'info');
 
             try {
                 const token = localStorage.getItem('admin_token');
@@ -3126,7 +3400,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             }
 
             // 顯示載入狀態
-            showWranglerSnippetModal('🔄 正在生成 Wrangler 配置片段...', 'info');
+            showWranglerSnippetModal(window.t('pages.admin.dashboard.loading.generating_wrangler'), 'info');
 
             try {
                 const token = localStorage.getItem('admin_token');
@@ -3157,7 +3431,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             if (!filePath) return;
 
             // 显示载入状态
-            showWriteWranglerModal('🔄 正在写入 wrangler.toml 文件...\n\n正在将 KV Namespace 配置写入到指定的文件中...', 'info');
+            showWriteWranglerModal(window.t('pages.admin.dashboard.loading.writing_wrangler'), 'info');
 
             try {
                 const token = localStorage.getItem('admin_token');
@@ -3183,6 +3457,12 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
         // 显示配置向导模态框
         function showWizardModal(steps) {
+            // Update modal title with i18n
+            const titleElement = document.getElementById('wizardModalTitle');
+            if (titleElement && window.t) {
+                titleElement.textContent = window.t('pages.admin.dashboard.modals.wizard_title');
+            }
+
             const wizardSteps = document.getElementById('wizardSteps');
             wizardSteps.innerHTML = '';
 
@@ -3193,19 +3473,23 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             wizardMsgBox.style.display = 'none';
             wizardSteps.appendChild(wizardMsgBox);
 
+            // Pre-load all translations to ensure they're available
+            const t = window.t || ((key) => key);
+
             steps.forEach(step => {
                 const stepDiv = document.createElement('div');
                 stepDiv.className = 'wizard-step';
-                
+
                 // 构建命令展示区域（如果存在命令）
                 let commandHtml = '';
                 if (step.command) {
+                    const copyCommandText = t('pages.admin.dashboard.wizard.buttons.copy_command');
                     commandHtml = `
                         <div style="background: var(--gray-900); color: #00ff00; padding: 12px; border-radius: 6px; margin: 12px 0; font-family: 'Monaco', 'Courier New', monospace; font-size: 13px; position: relative;">
                             <code style="display: block; white-space: pre-wrap;">${step.command}</code>
                         </div>
                         <button class="btn btn-ghost" onclick="copyCommand('${step.command.replace(/'/g, "\\'")}'); event.stopPropagation();" style="margin-bottom: 8px;">
-                            📋 复制命令
+                            ${copyCommandText}
                         </button>
                     `;
                 }
@@ -3216,15 +3500,15 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 // 添加 Cloudflare 服务链接按钮（如果有 URL，但排除 step 4）
                 if (step.url && String(step.id) !== '4') {
                     // 根据步骤 ID 自定义按钮文本
-                    let buttonText = '🔗 打开链接';
+                    let buttonText = t('pages.admin.dashboard.wizard.buttons.open_link');
                     if (String(step.id) === '1') {
-                        buttonText = '🔗 打开 Cloudflare Dashboard';
+                        buttonText = t('pages.admin.dashboard.wizard.buttons.open_dashboard');
                     } else if (String(step.id) === '2') {
-                        buttonText = '🔗 打开 API Token 管理';
+                        buttonText = t('pages.admin.dashboard.wizard.buttons.open_api_token');
                     } else if (String(step.id) === '3') {
-                        buttonText = '🔗 打开 Workers KV 管理';
+                        buttonText = t('pages.admin.dashboard.wizard.buttons.open_kv_management');
                     } else if (String(step.id) === '5') {
-                        buttonText = '🔗 打开 Email Routing 配置';
+                        buttonText = t('pages.admin.dashboard.wizard.buttons.open_email_routing');
                     }
 
                     actionsHtml += `
@@ -3235,25 +3519,28 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 }
 
                 if (step.field_id) {
+                    const gotoFillText = t('pages.admin.dashboard.wizard.buttons.goto_fill');
                     actionsHtml += `
                         <button class="btn btn-secondary" onclick="focusField('${step.field_id}')">
-                            📝 前往填写
+                            ${gotoFillText}
                         </button>
                     `;
                 }
                 // 在步骤 1 添加自动检测按钮
                 if (String(step.id) === '1') {
+                    const autoDetectText = t('pages.admin.dashboard.wizard.buttons.auto_detect');
                     actionsHtml += `
                         <button class="btn btn-ghost" onclick="triggerAutoDetectFromWizard(event)" style="font-size: 13px;">
-                            🛠️ 可选功能: 自动检测
+                            ${autoDetectText}
                         </button>
                     `;
                 }
                 // 将「创建 KV Namespace」按钮添加到步骤 3
                 if (String(step.id) === '3') {
+                    const quickFillKvText = t('pages.admin.dashboard.wizard.buttons.quick_fill_kv');
                     actionsHtml += `
                         <button class="btn btn-primary" onclick="ensureNamespaceAction()">
-                            🛠️ 可选功能: 快速填写 KV Namespace
+                            ${quickFillKvText}
                         </button>
                     `;
                 }
@@ -3261,6 +3548,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 if (String(step.id) === '4') {
                     // 获取手动配置说明（如果有）
                     const manualConfigDesc = step.manual_config_description || '';
+                    const manualConfigText = t('pages.admin.dashboard.wizard.buttons.manual_config');
 
                     actionsHtml += `
                         <div style="margin-top: 8px; display: flex; justify-content: center;">
@@ -3270,17 +3558,18 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                         </div>
                         <div style="margin-top: 12px; display: flex; gap: 8px;">
                             <button class="btn btn-ghost" onclick="showManualConfigMessage(\`${manualConfigDesc}\`)" style="flex: 1; height: 40px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; padding: 8px;">
-                                <span style="font-size: 14px;">🔧 手动配置选项</span>
+                                <span style="font-size: 14px;">${manualConfigText}</span>
                             </button>
                         </div>
                     `;
                 }
                 actionsHtml += '</div>';
-                
+
+                const stepLabelText = t('pages.admin.dashboard.wizard.step_label');
                 stepDiv.innerHTML = `
                     <div class="wizard-step-header">
                         <div class="wizard-step-icon">${step.icon}</div>
-                        <div class="wizard-step-title">步骤 ${step.id}: ${step.title}</div>
+                        <div class="wizard-step-title">${stepLabelText} ${step.id}: ${step.title}</div>
                     </div>
                     <div class="wizard-step-desc">${step.description}</div>
                     <div class="wizard-step-hint">💡 ${step.hint}</div>
@@ -3340,13 +3629,13 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             const resultDiv = document.getElementById('cfHelperResult');
 
             // 显示按钮载入动画
-            btn.innerHTML = '<span class="loading"></span> 检测中...';
+            btn.innerHTML = '<span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.detecting');
             btn.disabled = true;
 
             // 在结果区域显示载入动画（与测试连接相同的位置）
             resultDiv.style.display = 'block';
             resultDiv.className = 'alert alert-info show';
-            resultDiv.innerHTML = '<div style="padding: 16px;"><span class="loading"></span> 正在自动检测 Cloudflare 配置...</div>';
+            resultDiv.innerHTML = '<div style="padding: 16px;"><span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.auto_detecting') + '</div>';
 
             try {
                 // 关闭向导模态框
@@ -3405,6 +3694,41 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
         // 显示工作原理流程图
         document.getElementById('showFlowBtn')?.addEventListener('click', function() {
+            const t = window.t || ((key) => key);
+
+            // Update modal title with i18n
+            const titleElement = document.getElementById('flowDiagramModalTitle');
+            if (titleElement) {
+                titleElement.textContent = t('pages.admin.dashboard.modals.flow_diagram_title');
+            }
+
+            // Update all flow diagram steps
+            const modal = document.getElementById('flowDiagramModal');
+            if (modal) {
+                const steps = modal.querySelectorAll('.flow-step');
+                steps.forEach((step, index) => {
+                    const stepNum = index + 1;
+                    const titleEl = step.querySelector('.step-title');
+                    const descEl = step.querySelector('.step-description');
+                    const detailEl = step.querySelector('.step-detail');
+
+                    if (titleEl) titleEl.innerHTML = t(`pages.admin.dashboard.flow_diagram.step${stepNum}_title`);
+                    if (descEl) descEl.innerHTML = t(`pages.admin.dashboard.flow_diagram.step${stepNum}_desc`);
+                    if (detailEl) detailEl.innerHTML = t(`pages.admin.dashboard.flow_diagram.step${stepNum}_detail`);
+                });
+
+                // Update advantages section
+                const advantagesTitle = modal.querySelector('.modal-body > div:last-child > div:first-child');
+                if (advantagesTitle) {
+                    advantagesTitle.innerHTML = t('pages.admin.dashboard.flow_diagram.advantages_title');
+                }
+
+                const advantagesList = modal.querySelectorAll('.modal-body > div:last-child ul li');
+                advantagesList.forEach((li, index) => {
+                    li.innerHTML = t(`pages.admin.dashboard.flow_diagram.advantage${index + 1}`);
+                });
+            }
+
             document.getElementById('flowDiagramModal').classList.add('show');
         });
 
@@ -3547,16 +3871,18 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             if (selectedText.length >= 4 && selectedText.length <= 10) {
                 if (/^[A-Z0-9]+$/i.test(selectedText)) {
                     learnBtn.disabled = false;
-                    learnBtn.innerHTML = `📌 学习「${selectedText}」`;
+                    learnBtn.innerHTML = window.t('pages.admin.dashboard.sections.llm.learn_button_with_text', {
+                        text: selectedText
+                    });
                     learnBtn.dataset.selectedText = selectedText;
                     learnBtn.dataset.selectionStart = textarea.selectionStart;
                 } else {
                     learnBtn.disabled = true;
-                    learnBtn.innerHTML = '📌 学习选中的验证码模式';
+                    learnBtn.innerHTML = window.t('pages.admin.dashboard.sections.llm.learn_button');
                 }
             } else {
                 learnBtn.disabled = true;
-                learnBtn.innerHTML = '📌 学习选中的验证码模式';
+                learnBtn.innerHTML = window.t('pages.admin.dashboard.sections.llm.learn_button');
             }
         });
 
@@ -3573,7 +3899,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 return;
             }
 
-            btn.innerHTML = '<span class="loading"></span> 学习中...';
+            btn.innerHTML = '<span class="loading"></span> ' + window.t('pages.admin.dashboard.loading.learning');
             btn.disabled = true;
 
             try {
@@ -3591,17 +3917,26 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                     })
                 });
 
+                const t = window.t || ((key) => key);
+
+                // Check HTTP status first
+                if (!response.ok) {
+                    showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.api_error', { message: response.status }), 'error');
+                    return;
+                }
+
                 const data = await response.json();
 
-                if (response.ok && data.success) {
+                if (data.success) {
                     const keywords = data.preview.keywords_before.join('、');
-                    showMessage(message, `✅ 模式学习成功！关键词：${keywords}`, 'success');
+                    showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.learn_success', { keywords: keywords }), 'success');
                     loadPatterns(); // 重新加载模式列表
                 } else {
-                    showMessage(message, `❌ ${data.message || '学习失败'}`, 'error');
+                    showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.learn_failed', { message: data.message || '学习失败' }), 'error');
                 }
             } catch (error) {
-                showMessage(message, `❌ 网络错误: ${error.message}`, 'error');
+                const t = window.t || ((key) => key);
+                showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.learn_network_error', { message: error.message }), 'error');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
@@ -3613,14 +3948,15 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
             document.getElementById('emailSample').value = '';
             const learnBtn = document.getElementById('learnPatternBtn');
             learnBtn.disabled = true;
-            learnBtn.innerHTML = '📌 学习选中的验证码模式';
+            learnBtn.innerHTML = window.t('pages.admin.dashboard.sections.llm.learn_button');
         });
 
         // 加载已学习模式列表
         async function loadPatterns() {
             const patternsList = document.getElementById('patternsList');
+            const t = window.t || ((key) => key);
 
-            patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gray-500);">加载中...</div>';
+            patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gray-500);">' + t('pages.admin.dashboard.sections.llm.loading_patterns') + '</div>';
 
             try {
                 const token = localStorage.getItem('admin_token');
@@ -3634,7 +3970,7 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
                 if (response.ok && data.success) {
                     if (data.patterns.length === 0) {
-                        patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gray-500);">暂无已学习模式，请先训练</div>';
+                        patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gray-500);">' + t('pages.admin.dashboard.sections.llm.patterns.no_patterns') + '</div>';
                         return;
                     }
 
@@ -3649,41 +3985,50 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                             ? pattern.email_content.substring(0, 150) + '...' 
                             : pattern.email_content;
                         
+                        // Translate code type
+                        const codeTypeText = pattern.code_type === 'numeric'
+                            ? t('pages.admin.dashboard.sections.llm.patterns.numeric')
+                            : t('pages.admin.dashboard.sections.llm.patterns.alphanumeric');
+
+                        // Build translated labels
+                        const keywordsLabel = t('pages.admin.dashboard.sections.llm.patterns.keywords_label');
+                        const digitsText = t('pages.admin.dashboard.sections.llm.patterns.digits_suffix');
+                        const emailContentLabel = t('pages.admin.dashboard.sections.llm.patterns.email_content_label');
+                        const highlightedLabel = t('pages.admin.dashboard.sections.llm.patterns.highlighted_code_label');
+                        const usageText = t('pages.admin.dashboard.sections.llm.patterns.usage_count', { count: pattern.usage_count });
+                        const successRateText = t('pages.admin.dashboard.sections.llm.patterns.success_rate', { rate: successRate });
+                        const deleteButtonText = t('pages.admin.dashboard.sections.llm.patterns.delete_button');
+
                         html += `
                             <div class="pattern-item" style="border: 1px solid var(--gray-200); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                                     <div style="flex: 1;">
-                                        <div style="font-weight: 600; margin-bottom: 8px;">
-                                            <span class="badge badge-info">${pattern.code_type}</span>
-                                            <span style="margin-left: 8px;">关键词：「${pattern.keywords_before.join('、')}」→ ${pattern.code_length}位${pattern.code_type === 'numeric' ? '数字' : '字母数字'}</span>
-                                        </div>
-                                        
                                         <!-- 邮件内容预览 -->
                                         <div style="background: var(--gray-50); border-radius: 6px; padding: 12px; margin-bottom: 8px;">
-                                            <div style="font-size: 11px; color: var(--gray-500); margin-bottom: 4px; font-weight: 600;">邮件内容：</div>
+                                            <div style="font-size: 11px; color: var(--gray-500); margin-bottom: 4px; font-weight: 600;">${emailContentLabel}</div>
                                             <div style="font-size: 12px; color: var(--gray-700); line-height: 1.5; font-family: monospace; white-space: pre-wrap;">${emailPreview}</div>
                                         </div>
-                                        
+
                                         <!-- 高亮验证码 -->
                                         <div style="font-size: 13px; color: var(--gray-700); margin-top: 8px;">
-                                            <span style="color: var(--gray-500);">高亮验证码：</span>
+                                            <span style="color: var(--gray-500);">${highlightedLabel}</span>
                                             <span style="background: #FEF3C7; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-family: monospace;">${pattern.example_code}</span>
                                         </div>
                                     </div>
                                     <div style="text-align: right; margin-left: 16px;">
                                         <div style="font-size: 12px; color: var(--gray-600); margin-bottom: 4px;">
-                                            使用 ${pattern.usage_count} 次
+                                            ${usageText}
                                         </div>
                                         ${pattern.usage_count > 0 ? `
                                         <div style="font-size: 12px; color: ${successRate >= 80 ? 'var(--success)' : 'var(--warning)'};">
-                                            成功率 ${successRate}%
+                                            ${successRateText}
                                         </div>
                                         ` : ''}
                                     </div>
                                 </div>
                                 <div style="display: flex; gap: 8px; border-top: 1px solid var(--gray-200); padding-top: 12px;">
                                     <button class="btn btn-ghost" style="padding: 4px 12px; font-size: 12px;" onclick="deletePattern('${pattern.id}')">
-                                        🗑️ 删除
+                                        ${deleteButtonText}
                                     </button>
                                 </div>
                             </div>
@@ -3692,16 +4037,17 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
                     patternsList.innerHTML = html;
                 } else {
-                    patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">加载失败</div>';
+                    patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">' + t('pages.admin.dashboard.sections.llm.patterns.loading_failed') + '</div>';
                 }
             } catch (error) {
-                patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">网络错误</div>';
+                patternsList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">' + t('pages.admin.dashboard.sections.llm.patterns.network_error') + '</div>';
             }
         }
 
         // 删除模式
         async function deletePattern(patternId) {
-            if (!confirm('确定要删除这个模式吗？')) {
+            const t = window.t || ((key) => key);
+            if (!confirm(t('pages.admin.dashboard.sections.llm.patterns.confirm_delete'))) {
                 return;
             }
 
@@ -3717,18 +4063,180 @@ test.com" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', san
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    showMessage(message, '✅ 模式已删除', 'success');
+                    showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.delete_success'), 'success');
                     loadPatterns();
                 } else {
-                    showMessage(message, `❌ 删除失败: ${data.message}`, 'error');
+                    showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.delete_failed', { message: data.message }), 'error');
                 }
             } catch (error) {
-                showMessage(message, `❌ 网络错误: ${error.message}`, 'error');
+                showMessage(message, t('pages.admin.dashboard.sections.llm.patterns.delete_failed', { message: error.message }), 'error');
             }
+        }
+
+        // Initialize language switcher for login page
+        function initLoginLanguageSwitcher() {
+            const container = document.getElementById('loginLangSwitcher');
+            if (!container) return;
+
+            // Wait for i18n to be loaded
+            if (!window.isI18nLoaded || !window.isI18nLoaded()) {
+                setTimeout(initLoginLanguageSwitcher, 100);
+                return;
+            }
+
+            const currentLang = window.getCurrentLanguage ? window.getCurrentLanguage() : 'en-US';
+            const availableLanguages = {
+                'en-US': { name: 'English', flag: '🇺🇸', nativeName: 'EN' },
+                'zh-CN': { name: '简体中文', flag: '🇨🇳', nativeName: '中文' }
+            };
+
+            const currentLangData = availableLanguages[currentLang];
+            const otherLangs = Object.keys(availableLanguages).filter(code => code !== currentLang);
+
+            const switcherHTML = `
+                <button class="lang-btn" id="loginLangBtn" aria-label="Switch language" aria-haspopup="true" aria-expanded="false">
+                    <span class="lang-name">${currentLangData.flag}</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="lang-chevron">
+                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                </button>
+                <div class="lang-dropdown" id="loginLangDropdown" role="menu" aria-hidden="true">
+                    ${otherLangs.map(code => {
+                        const lang = availableLanguages[code];
+                        return `
+                            <a href="#" class="lang-option" data-lang="${code}" role="menuitem">
+                                <span class="lang-flag">${lang.flag}</span>
+                                <span class="lang-text">${lang.nativeName}</span>
+                            </a>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            container.innerHTML = switcherHTML;
+
+            // Setup event listeners
+            const langBtn = document.getElementById('loginLangBtn');
+            const langDropdown = document.getElementById('loginLangDropdown');
+
+            langBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = langDropdown.classList.contains('show');
+                if (isOpen) {
+                    langDropdown.classList.remove('show');
+                    langBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    langDropdown.classList.add('show');
+                    langBtn.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    langDropdown.classList.remove('show');
+                    langBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            container.querySelectorAll('.lang-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetLang = option.getAttribute('data-lang');
+                    if (window.switchLanguage) {
+                        window.switchLanguage(targetLang);
+                    }
+                });
+            });
+        }
+
+        // Initialize language switcher for admin page
+        function initAdminLanguageSwitcher() {
+            const container = document.getElementById('langSwitcherContainer');
+            if (!container) return;
+
+            // Wait for i18n to be loaded
+            if (!window.isI18nLoaded || !window.isI18nLoaded()) {
+                setTimeout(initAdminLanguageSwitcher, 100);
+                return;
+            }
+
+            const currentLang = window.getCurrentLanguage ? window.getCurrentLanguage() : 'en-US';
+            const availableLanguages = {
+                'en-US': { name: 'English', flag: '🇺🇸', nativeName: 'English' },
+                'zh-CN': { name: '简体中文', flag: '🇨🇳', nativeName: '简体中文' }
+            };
+
+            const currentLangData = availableLanguages[currentLang];
+            const otherLangs = Object.keys(availableLanguages).filter(code => code !== currentLang);
+
+            const switcherHTML = `
+                <button class="lang-btn" id="adminLangBtn" aria-label="Switch language" aria-haspopup="true" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="lang-icon">
+                        <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <span class="lang-name">${currentLangData.flag} <span>${currentLangData.nativeName}</span></span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="lang-chevron">
+                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                </button>
+                <div class="lang-dropdown" id="adminLangDropdown" role="menu" aria-hidden="true">
+                    ${otherLangs.map(code => {
+                        const lang = availableLanguages[code];
+                        return `
+                            <a href="#" class="lang-option" data-lang="${code}" role="menuitem">
+                                <span class="lang-flag">${lang.flag}</span>
+                                <span class="lang-text">${lang.nativeName}</span>
+                            </a>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            container.innerHTML = switcherHTML;
+            container.className = 'language-switcher-admin';
+
+            // Setup event listeners
+            const langBtn = document.getElementById('adminLangBtn');
+            const langDropdown = document.getElementById('adminLangDropdown');
+
+            langBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = langDropdown.classList.contains('show');
+                if (isOpen) {
+                    langDropdown.classList.remove('show');
+                    langBtn.setAttribute('aria-expanded', 'false');
+                } else {
+                    langDropdown.classList.add('show');
+                    langBtn.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!container.contains(e.target)) {
+                    langDropdown.classList.remove('show');
+                    langBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            container.querySelectorAll('.lang-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetLang = option.getAttribute('data-lang');
+                    if (window.switchLanguage) {
+                        window.switchLanguage(targetLang);
+                    }
+                });
+            });
         }
 
         // 页面加载时自动加载模式列表
         window.addEventListener('load', function() {
+            // Initialize language switchers (both login and admin)
+            initLoginLanguageSwitcher();
+            initAdminLanguageSwitcher();
+
             // 延迟加载，等待登录完成
             setTimeout(() => {
                 if (localStorage.getItem('admin_token')) {

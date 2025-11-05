@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Temporary Email Service</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css">
+    <link rel="icon" type="image/png" href="https://fastapi.tiangolo.com/img/favicon.png">
+    <style>
+        /* Language switcher styles */
+        .language-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .language-switcher label {
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+            margin: 0;
+        }
+
+        .language-switcher select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .language-switcher select:hover {
+            border-color: #999;
+        }
+
+        .language-switcher select:focus {
+            border-color: #49cc90;
+        }
+
+        /* Loading indicator */
+        .loading-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #666;
+            display: none;
+        }
+
+        .loading-indicator.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+        <label for="lang-select">🌐 Language:</label>
+        <select id="lang-select">
+            <option value="zh-CN">简体中文</option>
+            <option value="en-US">English</option>
+        </select>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-indicator" id="loading">
+        Loading API documentation...
+    </div>
+
+    <!-- Swagger UI Container -->
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+        // Get language from localStorage or URL path
+        function getInitialLanguage() {
+            // Check localStorage first
+            const savedLang = localStorage.getItem('api-docs-language');
+            if (savedLang) {
+                return savedLang;
+            }
+
+            // Check URL path
+            const path = window.location.pathname;
+            if (path.startsWith('/en/')) {
+                return 'en-US';
+            } else if (path.startsWith('/zh-cn/')) {
+                return 'zh-CN';
+            }
+
+            // Default to Chinese
+            return 'zh-CN';
+        }
+
+        // Get OpenAPI URL based on language
+        function getOpenApiUrl(language) {
+            if (language === 'en-US') {
+                return '/en/openapi.json';
+            } else {
+                return '/zh-cn/openapi.json';
+            }
+        }
+
+        // Initialize Swagger UI
+        let currentLanguage = getInitialLanguage();
+        let ui;
+
+        function initSwaggerUI(language) {
+            const loading = document.getElementById('loading');
+            loading.classList.add('show');
+
+            const openApiUrl = getOpenApiUrl(language);
+
+            // Update page title
+            const titles = {
+                'zh-CN': 'API文档 - 临时邮箱服务',
+                'en-US': 'API Documentation - Temporary Email Service'
+            };
+            document.title = titles[language] || titles['zh-CN'];
+
+            ui = SwaggerUIBundle({
+                url: openApiUrl,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                onComplete: function() {
+                    loading.classList.remove('show');
+                    console.log('Swagger UI loaded with language:', language);
+                },
+                requestInterceptor: function(req) {
+                    console.log('API Request:', req.url);
+                    return req;
+                }
+            });
+
+            return ui;
+        }
+
+        // Initialize with current language
+        initSwaggerUI(currentLanguage);
+
+        // Set select value
+        document.getElementById('lang-select').value = currentLanguage;
+
+        // Language switcher event listener
+        document.getElementById('lang-select').addEventListener('change', function(e) {
+            const newLanguage = e.target.value;
+            console.log('Switching language to:', newLanguage);
+
+            // Save to localStorage
+            localStorage.setItem('api-docs-language', newLanguage);
+
+            // Update current language
+            currentLanguage = newLanguage;
+
+            // Reinitialize Swagger UI with new language
+            initSwaggerUI(newLanguage);
+
+            // Update URL without page reload (optional)
+            const newPath = newLanguage === 'en-US' ? '/en/docs' : '/zh-cn/docs';
+            window.history.pushState({}, '', newPath);
+        });
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function(e) {
+            const path = window.location.pathname;
+            let language = 'zh-CN';
+
+            if (path.startsWith('/en/')) {
+                language = 'en-US';
+            } else if (path.startsWith('/zh-cn/')) {
+                language = 'zh-CN';
+            }
+
+            if (language !== currentLanguage) {
+                currentLanguage = language;
+                document.getElementById('lang-select').value = language;
+                initSwaggerUI(language);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,548 @@
+{
+  "common": {
+    "buttons": {
+      "generate": "Generate",
+      "refresh": "Refresh",
+      "clear": "Clear",
+      "close": "Close",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "extract": "Extract",
+      "view": "View",
+      "copy": "Copy",
+      "delete": "Delete"
+    },
+    "status": {
+      "loading": "Loading...",
+      "success": "Success",
+      "error": "Error",
+      "warning": "Warning"
+    },
+    "time": {
+      "seconds": "seconds",
+      "minutes": "minutes",
+      "hours": "hours",
+      "ago": "ago",
+      "remaining": "remaining",
+      "just_now": "Just now"
+    }
+  },
+  "pages": {
+    "home": {
+      "title": "Temporary Email Service",
+      "subtitle": "Fast, secure, disposable emails",
+      "description": "Professional temporary email service with automatic verification code extraction",
+      "features": {
+        "instant": "Instant Generation",
+        "secure": "Secure Encryption",
+        "smart": "Smart Recognition"
+      },
+      "stats": {
+        "active_emails": "Active Emails",
+        "total_mails": "Total Mails"
+      }
+    },
+    "admin": {
+      "title": "System Management Center",
+      "subtitle": "Admin dashboard and configuration",
+      "login": {
+        "page_title": "System Management Center",
+        "page_subtitle": "Please login to manage system configuration",
+        "form": {
+          "username_label": "Username",
+          "username_placeholder": "Please enter username",
+          "password_label": "Password",
+          "password_placeholder": "Please enter password",
+          "login_button": "Login",
+          "logging_in": "Logging in..."
+        },
+        "default_account": {
+          "title": "Default Administrator Account",
+          "username_label": "Username:",
+          "password_label": "Password:",
+          "warning": "Please change the default password in production environment"
+        },
+        "messages": {
+          "success": "Login successful!",
+          "failed": "Login failed",
+          "please_login": "❌ Please login first",
+          "invalid_credentials": "Invalid username or password"
+        }
+      },
+      "dashboard": {
+        "title": "System Configuration Management",
+        "sidebar": {
+          "logo": "System Admin",
+          "server_config": "Server Configuration",
+          "cloudflare_config": "Cloudflare Domain Configuration",
+          "llm_config": "Verification Code Extraction",
+          "realtime_logs": "Realtime Logs 🔗"
+        },
+        "buttons": {
+          "save_config": "Save Configuration",
+          "reload_config": "Reload Configuration",
+          "logout": "Logout",
+          "open_menu": "Open Menu",
+          "close_menu": "Close Menu",
+          "show_flow": "📊 View Mail Flow",
+          "wizard": "📖 Configuration Wizard",
+          "test_connection": "🔍 Test Connection & Check Status",
+          "detect_models": "🔍 Auto Detect",
+          "manual_input": "✍️ Manual Input",
+          "learn_pattern": "🧠 Learn Pattern",
+          "clear_sample": "🗑️ Clear Sample",
+          "refresh": "Refresh",
+          "working_principle": "Working Principle"
+        },
+        "modals": {
+          "wizard_title": "📖 Cloudflare Configuration Wizard",
+          "manual_config_title": "📝 Manual Deployment Configuration",
+          "flow_diagram_title": "📧 Email Forwarding Working Principle"
+        },
+        "wizard": {
+          "load_success": "Configuration wizard loaded successfully",
+          "load_failed": "Failed to load wizard",
+          "step1": {
+            "title": "Get Cloudflare Account ID",
+            "description": "1. Login to Cloudflare Dashboard\n2. Find the three-dot button (⋮) in the right sidebar and click it\n3. Find and copy the Account ID from the dropdown menu",
+            "hint": "Account ID is a 32-character hexadecimal string, like: 1234567890abcdef1234567890abcdef"
+          },
+          "step2": {
+            "title": "Create API Token",
+            "description": "Click \"Create Token\", select \"Create Custom Token\", and set the following permissions:\n\n🔑 Required Permissions:\n• Account : Account Settings: Read - Read account information\n• Account : Workers KV Storage: Read - Read KV data\n\n🔍 Domain Check Features (Optional):\n• Zone : Zone: Read - Read domain list\n• Account : Email Routing Rules: Read - Read Email Routing configuration\n\nAfter adding these permissions, the system will be able to automatically detect your domains and verify Email Routing configuration status.",
+            "hint": "Copy the generated Token to the \"API Token\" field below (shown only once, please save it properly)"
+          },
+          "step3": {
+            "title": "Create KV Namespace",
+            "description": "Go to Workers & Pages → KV, click the \"Create instance\" button, enter a name (e.g., EMAIL_STORAGE)",
+            "hint": "After creation, copy the Namespace ID to the field below"
+          },
+          "step4": {
+            "title": "Deploy Cloudflare Worker",
+            "description": "Click the \"🚀 Deploy to Cloudflare\" button below to automatically deploy the Email Worker on Cloudflare.\n\nThe deployment process will automatically complete:\n1. Create Worker instance\n2. Configure KV Namespace binding\n3. Deploy email processing code\n4. Generate access endpoint\n\nIf one-click deployment fails, you can expand the \"Manual Configuration Options\" below for detailed steps.",
+            "hint": "Recommended to use the one-click deployment button for quick Worker deployment. After deployment, the Worker will automatically bind to your KV Namespace."
+          },
+          "step5": {
+            "title": "Configure Email Routing",
+            "description": "Set up email routing in Cloudflare Dashboard:\n\n1. Select your domain\n   ⚠️ If your domain hasn't been added to Cloudflare yet, please go to Cloudflare Dashboard to add the domain and complete DNS configuration first\n2. Go to Email → Email Routing\n3. Click \"Enable Email Routing\"\n4. After enabling, click the \"Routing rules\" tab\n5. Find the Catch-All rule, click \"Edit\"\n6. In the \"Action\" dropdown, select \"Send to Worker\"\n7. Select Worker: temp-email-worker\n8. Click Save",
+            "hint": "The Catch-All rule will forward all emails sent to this domain to the Worker for processing"
+          },
+          "step_label": "Step",
+          "buttons": {
+            "copy_command": "📋 Copy Command",
+            "open_link": "🔗 Open Link",
+            "open_dashboard": "🔗 Open Cloudflare Dashboard",
+            "open_api_token": "🔗 Open API Token Management",
+            "open_kv_management": "🔗 Open Workers KV Management",
+            "open_email_routing": "🔗 Open Email Routing Configuration",
+            "goto_fill": "📝 Go to Fill",
+            "auto_detect": "🛠️ Optional: Auto Detect",
+            "quick_fill_kv": "🛠️ Optional: Quick Fill KV Namespace",
+            "manual_config": "🔧 Manual Configuration Options"
+          }
+        },
+        "loading": {
+          "auto_detecting": "Auto-detecting Cloudflare configuration...",
+          "fetching_models": "🔍 Fetching model list from API...",
+          "saving": "Saving...",
+          "reloading": "Reloading...",
+          "loading": "Loading...",
+          "checking": "Checking...",
+          "creating_namespace": "🔄 Creating KV Namespace...",
+          "generating_wrangler": "🔄 Generating Wrangler configuration snippet...",
+          "writing_wrangler": "🔄 Writing wrangler.toml file...\n\nWriting KV Namespace configuration to the specified file...",
+          "detecting": "Detecting...",
+          "learning": "Learning..."
+        },
+        "check_messages": {
+          "init": "🚀 Starting checks...",
+          "token_verifying": "🔑 Verifying API Token...",
+          "token_valid": "✅ Token is valid and usable",
+          "token_failed": "❌ API Token verification failed, please check if Token is correct",
+          "account_verifying": "🆔 Verifying Account ID...",
+          "account_valid": "✅ Account ID is correct",
+          "account_failed": "❌ Account ID verification failed",
+          "namespace_verifying": "📦 Verifying KV Namespace...",
+          "namespace_connected": "✅ Successfully connected to Namespace (currently has {count}+ keys)",
+          "namespace_failed": "❌ KV Namespace verification failed",
+          "match_checking": "🔗 Checking configuration match...",
+          "match_success": "✅ Configuration matched",
+          "domains_checking": "📧 Checking domain configuration...",
+          "domains_found": "📋 Found {count} domain(s), starting checks...",
+          "domain_checking": "📧 Checking domain {current}/{total}: {domain}",
+          "domains_complete": "✅ Domain check complete ({count} domain(s))",
+          "all_complete": "🎉 All checks complete!",
+          "check_complete_success": "✅ Check complete! All configurations are normal.",
+          "wrangler_detected": "Successfully detected Wrangler CLI configuration",
+          "wrangler_version": "Wrangler version: {version}",
+          "namespace_detected": "Detected Namespace: {namespace}",
+          "api_token_manual": "API Token cannot be automatically retrieved, manual creation required"
+        },
+        "flow_diagram": {
+          "step1_title": "User Sends Email",
+          "step1_desc": "User sends an email to the temporary mailbox address (e.g., test@yourdomain.com)<br>Email server queries DNS MX records to determine the receiving mail server",
+          "step1_detail": "<strong>Example:</strong> gmail.com → DNS Query → yourdomain.com MX record",
+          "step2_title": "Cloudflare DNS Resolution",
+          "step2_desc": "DNS MX record points to Cloudflare Email Routing<br>Email is routed to Cloudflare infrastructure for processing",
+          "step2_detail": "<strong>MX Record:</strong> yourdomain.com → isaac.mx.cloudflare.net (Priority 10)",
+          "step3_title": "Cloudflare Email Routing",
+          "step3_desc": "Cloudflare receives the email and verifies the sender<br>Triggers the configured Email Worker for custom processing",
+          "step3_detail": "<strong>Configuration Location:</strong> Cloudflare Dashboard → Email → Email Routing → Routes",
+          "step4_title": "Email Worker Processing",
+          "step4_desc": "JavaScript Worker intercepts the email and performs the following operations:<br>• Parses email content (plain text + HTML)<br>• Extracts sender, recipient, subject, timestamp<br>• Generates unique email ID (based on content hash)",
+          "step4_detail": "<strong>Worker File:</strong> workers/email-handler.js",
+          "step5_title": "Store to Workers KV",
+          "step5_desc": "Store email data to Cloudflare Workers KV (key-value database)<br>• Key format: <code>mail:{email address}:{timestamp}</code><br>• Automatically sets 1-hour expiration (TTL=3600 seconds)<br>• Maintains mail index list for each mailbox (max 50 emails)",
+          "step5_detail": "<strong>Example Key:</strong> mail:test@example.com:1704096000000",
+          "step6_title": "FastAPI Backend Reads",
+          "step6_desc": "Python backend reads data through Cloudflare KV API:<br>• Uses Account ID + Namespace ID + API Token for authentication<br>• Calls Cloudflare REST API to retrieve emails<br>• Returns JSON-formatted email data to frontend",
+          "step6_detail": "<strong>API Endpoint:</strong> GET /api/email/{token}/mails",
+          "step7_title": "User Views Email",
+          "step7_desc": "Web frontend displays email content:<br>• Shows email list (sender, subject, time)<br>• Shows detailed email content (plain text + HTML)<br>• Automatically extracts verification codes (using LLM or regex)",
+          "step7_detail": "<strong>Frontend Page:</strong> http://localhost:1234/",
+          "advantages_title": "💡 Technical Advantages",
+          "advantage1": "<strong>Zero Cost</strong>: Cloudflare Workers KV free tier is sufficient (100,000 reads per day)",
+          "advantage2": "<strong>High Performance</strong>: Global CDN nodes with millisecond response times",
+          "advantage3": "<strong>Secure and Reliable</strong>: Emails automatically expire, no worries about data leaks",
+          "advantage4": "<strong>Easy to Scale</strong>: Supports multiple custom domains, easily expand temporary mailbox service"
+        },
+        "sections": {
+          "server": {
+            "title": "Server Configuration",
+            "port_label": "Port",
+            "port_hint": "Server listening port",
+            "host_label": "Host Address",
+            "host_hint": "Server binding address",
+            "reload_label": "Development Mode Auto-Reload",
+            "admin_account": "Administrator Account",
+            "admin_username": "Administrator Username",
+            "admin_password": "Administrator Password",
+            "password_hint": "Leave blank to keep current password",
+            "password_placeholder": "Leave blank to keep unchanged",
+            "restart_required": "Requires Restart",
+            "warning_relogin": "⚠️ You need to re-login after changing administrator account"
+          },
+          "cloudflare": {
+            "title": "Cloudflare Configuration",
+            "instant_effect": "Instant Effect",
+            "account_id_label": "Cloudflare Account ID",
+            "account_id_placeholder": "your-account-id",
+            "namespace_id_label": "KV Namespace ID",
+            "namespace_id_placeholder": "your-namespace-id",
+            "api_token_label": "Cloudflare API Token",
+            "api_token_placeholder": "your-api-token",
+            "permissions_required": "🔑 Required Permissions:",
+            "permission_account_read": "Account Settings: Read - Read account information",
+            "permission_kv_read": "Workers KV Storage: Read - Read KV data",
+            "permission_zone_read": "Zone: Read - Read domain list (for domain check)",
+            "permission_email_read": "Email Routing Rules: Read - Read Email Routing config (for domain check)",
+            "create_token_link": "📖 Create API Token →",
+            "checker_info_title": "💡 About Configuration Checker",
+            "checker_info_line1": "• Even if the checker shows errors, <strong>the functionality may still work normally</strong> if your configuration is correct",
+            "checker_info_line2": "• This is usually because Docker environment variables are not properly mounted or permission issues prevent the checker from reading the configuration",
+            "checker_info_line3": "• <strong>Suggestion</strong>: Test the functionality first (generate a mailbox and try receiving emails), if it works normally, you can ignore the checker warnings"
+          },
+          "domains": {
+            "title": "Domain Management",
+            "enable_custom": "Enable Custom Domains",
+            "custom_domains_label": "Custom Domain List",
+            "custom_domains_placeholder": "example.com\nyour-domain.com\ntest.com",
+            "custom_domains_hint": "Enter one domain per line (automatically uses Cloudflare KV)<br>⚠️ Note: Domains must be added to your Cloudflare account and Email Routing must be configured",
+            "enable_builtin": "Enable Built-in Domains",
+            "builtin_domains_hint": "20 preset temporary email domains (automatically uses external API)"
+          },
+          "llm": {
+            "title": "Verification Code Extraction",
+            "instant_effect": "Instant Effect",
+            "api_docs": "API Documentation",
+            "enable_llm": "Enable LLM Code Extraction",
+            "enable_llm_hint": "Use AI model to intelligently recognize verification codes",
+            "api_key_label": "OpenAI API Key",
+            "api_key_placeholder": "sk-xxx or ak-xxx",
+            "api_base_label": "API Base URL",
+            "api_base_placeholder": "https://api.openai.com/v1",
+            "api_base_hint": "Custom API endpoint (supports compatible services)",
+            "model_label": "Model Name",
+            "model_select_placeholder": "-- Select from dropdown or switch to manual input --",
+            "model_input_placeholder": "gpt-3.5-turbo (manual input)",
+            "model_toggle_title": "Toggle input method",
+            "model_toggle_button": "📋 Toggle",
+            "model_hint": "Manually enter model name, or click 「Auto Detect」 to load model list then switch to dropdown selection",
+            "default_method_label": "Frontend Default Extraction Method",
+            "default_method_badge": "Frontend Default",
+            "method_llm": "🤖 LLM Smart Extraction (AI Analysis)",
+            "method_pattern": "📌 Pattern Training Extraction (Based on Learning)",
+            "default_method_hint": "Set the default extraction method when frontend calls API. LLM mode is smarter but requires API Key, pattern training is based on admin-learned rules and costs less.",
+            "pattern_training_title": "Pattern Training",
+            "pattern_training_info": "ℹ️ Paste email sample, select verification code text, then click 「Learn Pattern」, the system will automatically recognize keywords and save extraction rules",
+            "email_sample_label": "Email Sample",
+            "email_sample_placeholder": "Paste email content, then select verification code for training...\n\nExample:\nYour verification code is: 123456\nValid for 5 minutes",
+            "sample_hint_title": "💡 <strong>Operation Steps:</strong>",
+            "sample_hint_step1": "① Paste email content into the text box above →",
+            "sample_hint_step2": "② Use mouse to drag and select verification code text (e.g., <code>123456</code>) →",
+            "sample_hint_step3": "③ The 「📌 Learn Selected Code Pattern」 button will automatically activate →",
+            "sample_hint_step4": "④ Click button to complete training",
+            "learn_button": "📌 Learn Selected Code Pattern",
+            "learn_button_with_text": "📌 Learn「{text}」",
+            "clear_button": "🗑️ Clear",
+            "model_hint_default": "Manually enter model name, or click「Auto Detect」to load model list then switch to dropdown selection",
+            "model_hint_manual_mode": "Manually enter model name, or click「Auto Detect」to load model list from API",
+            "model_hint_no_models": "⚠️ Please click「Auto Detect」to load model list first",
+            "model_hint_no_api_base": "⚠️ Please fill in API Base URL first",
+            "model_hint_no_api_key": "⚠️ Please fill in API Key first",
+            "model_hint_detect_failed": "❌ {message}",
+            "learned_patterns_label": "Learned Patterns",
+            "reload_button": "🔄 Reload",
+            "loading_patterns": "Loading...",
+            "patterns": {
+              "no_patterns": "No learned patterns yet, please train first",
+              "keywords_label": "Keywords:",
+              "numeric": "numeric",
+              "alphanumeric": "alphanumeric",
+              "digits_suffix": "digits",
+              "email_content_label": "Email Content:",
+              "highlighted_code_label": "Highlighted Code:",
+              "usage_count": "Used {count} times",
+              "success_rate": "Success Rate {rate}%",
+              "delete_button": "🗑️ Delete",
+              "loading_failed": "Loading failed",
+              "network_error": "Network error",
+              "confirm_delete": "Are you sure you want to delete this pattern?",
+              "delete_success": "✅ Pattern deleted",
+              "delete_failed": "❌ Delete failed: {message}",
+              "learn_success": "✅ Pattern learned successfully! Keywords: {keywords}",
+              "learn_failed": "❌ {message}",
+              "learn_network_error": "❌ Network error: {message}",
+              "api_error": "❌ API error: {message}"
+            }
+          }
+        }
+      }
+    }
+  },
+  "email": {
+    "generation": {
+      "title": "Generate Temporary Email",
+      "domain_select_label": "Select Domain:",
+      "random_domain": "🎲 Random Domain (Recommended)",
+      "custom_name_label": "Custom Name",
+      "custom_prefix_toggle": "Custom Name",
+      "use_random": "Use Random",
+      "use_custom": "Use Custom",
+      "custom_prefix_placeholder": "e.g., user123, hello2024",
+      "custom_prefix_hint": "Letters and numbers only",
+      "generate_button": "Generate New Email",
+      "generate_hint": "You can create multiple temporary email addresses, random domains will be automatically assigned"
+    },
+    "list": {
+      "title": "My Emails",
+      "empty_state_title": "No emails created yet",
+      "empty_state_message": "Click the button above to generate your first temporary email address"
+    },
+    "details": {
+      "from": "From:",
+      "time": "Time:",
+      "verification_codes": "Verification Codes",
+      "extract_codes_button": "Extract Verification Codes",
+      "mail_content": "Mail Content",
+      "view_mode": "HTML",
+      "loading": "Loading...",
+      "loading_content": "Loading mail content...",
+      "data_not_loaded": "Mail data not loaded",
+      "please_refresh": "Please refresh mail list",
+      "not_in_cache": "Mail details not yet loaded into local cache.\n\nPlease click the \"Refresh\" button next to the inbox to reload the mail list, then try viewing this mail again.",
+      "not_in_cache_short": "Mail details not loaded, please refresh mail list and retry.",
+      "cache_warning": "Mail details not in cache, please refresh mail list",
+      "no_subject": "(No Subject)",
+      "unknown_sender": "Unknown Sender",
+      "time_unknown": "Time Unknown",
+      "content_empty": "(Mail content is empty)",
+      "text_view": "Text",
+      "cannot_extract": "Cannot extract verification codes, please reopen mail"
+    },
+    "status": {
+      "not_found": "Not Found",
+      "error": "Error",
+      "expired": "Expired"
+    },
+    "mail": {
+      "copy_tooltip": "Copy email",
+      "external_view_tooltip": "View externally",
+      "delete_tooltip": "Delete email",
+      "expand_collapse_tooltip": "Expand/Collapse",
+      "inbox_label": "Inbox",
+      "refresh_tooltip": "Refresh",
+      "mails_count": "{count} mails",
+      "from_label": "From:",
+      "no_mails_title": "No mails yet",
+      "no_mails_message": "Waiting for new mails...",
+      "loading_mails": "Loading mails..."
+    },
+    "codes": {
+      "found_count": "Found {count} verification code(s):",
+      "not_found": "No verification codes found",
+      "extracting": "Extracting...",
+      "extract_button": "Extract Verification Codes",
+      "extract_tooltip": "Extract verification codes",
+      "click_to_copy": "Click to copy",
+      "close_tooltip": "Close"
+    }
+  },
+  "api": {
+    "terminal": {
+      "title": "API Call Terminal",
+      "welcome": "API call monitoring started...",
+      "clear_logs": "Clear Logs",
+      "confirm_clear": "Are you sure you want to clear all API logs?",
+      "logs_cleared": "API logs cleared",
+      "request": "Request",
+      "response": "Response",
+      "headers": "Headers",
+      "body": "Body",
+      "no_request_body": "No request body",
+      "no_response_body": "No response body"
+    },
+    "notifications": {
+      "popup_toggle": "Popup Notifications: {status}",
+      "on": "On",
+      "off": "Off"
+    },
+    "auto_refresh": {
+      "toggle": "Auto Refresh: {status}",
+      "on": "On",
+      "off": "Off"
+    },
+    "descriptions": {
+      "generate_email": "Generate temporary email",
+      "view_mail_detail": "View mail details",
+      "get_mail_list": "Get mail list",
+      "extract_codes": "Extract verification codes",
+      "get_domains": "Get domain list",
+      "api_call": "API call"
+    },
+    "cannot_parse_response": "[Cannot parse response body]",
+    "copy_url_tooltip": "Copy URL",
+    "close_tooltip": "Close",
+    "copy_failed": "Copy failed",
+    "copied": "Copied!"
+  },
+  "footer": {
+    "about": {
+      "title": "About Service",
+      "description": "Providing secure and reliable temporary email service"
+    },
+    "docs": {
+      "title": "Documentation",
+      "api_docs": "API Documentation",
+      "redoc": "ReDoc"
+    },
+    "resources": {
+      "title": "More Resources",
+      "github": "GitHub",
+      "guide": "User Guide"
+    },
+    "warning": "For testing purposes only, do not receive sensitive or important information",
+    "copyright": "© 2025 TempMail Pro. All rights reserved."
+  },
+  "api_docs": {
+    "title": "Temporary Email Service",
+    "description": "API service for automatic temporary email generation and verification code reception",
+    "endpoints": {
+      "generate_email": {
+        "summary": "Generate temporary email",
+        "description": "Generate a new temporary email address with optional custom prefix and domain",
+        "params": {
+          "prefix": "Custom prefix (optional)",
+          "domain": "Specify domain (optional, must be in available domains list)"
+        }
+      },
+      "get_mails": {
+        "summary": "Get email list (full content version)",
+        "description": "🆕 Automatically returns full email content:\\n- **content**: Full plain text content (cleaned)\\n- **htmlContent**: Full HTML content (cleaned and enhanced)\\n- Automatically fetches full content from Cloudflare KV in batch (if needed)",
+        "params": {
+          "token": "Email token",
+          "limit": "Maximum number of results (1-100, recommended to keep default value to control response size)",
+          "offset": "Offset",
+          "unread_only": "Return only unread emails"
+        }
+      },
+      "get_mail_detail": {
+        "summary": "Get mail details",
+        "description": "Get detailed content of a specific email, supports plain text and HTML",
+        "params": {
+          "token": "Email token",
+          "mail_id": "Mail ID"
+        }
+      },
+      "extract_codes": {
+        "summary": "Extract verification codes",
+        "description": "Smart extraction of verification codes from all emails with multi-level strategy:\\n\\n1. **Pattern-based extraction** - Learned patterns from admin training, highest priority\\n2. **LLM-based extraction** - OpenAI-compatible API intelligent extraction\\n3. **Regex-based extraction** - Multiple regex patterns with confidence scoring\\n\\nReturns deduplicated verification code list with confidence scores.",
+        "params": {
+          "token": "Email token"
+        }
+      },
+      "wait_for_mail": {
+        "summary": "Wait for new mail (long polling)",
+        "description": "Wait for new emails using long polling, returns immediately when new mail arrives or timeout occurs",
+        "params": {
+          "token": "Email token",
+          "timeout": "Wait timeout (seconds, default 30, max 60)",
+          "last_check": "Last check timestamp (ISO format)"
+        }
+      },
+      "get_domains": {
+        "summary": "Get available domains",
+        "description": "Returns list of available email domains, including:\\n- Custom domains (Cloudflare Workers KV based)\\n- Builtin domains (External API based)",
+        "params": {}
+      },
+      "health_check": {
+        "summary": "Health check",
+        "description": "Returns service status and configuration information",
+        "params": {}
+      },
+      "test_cloudflare": {
+        "summary": "Test Cloudflare KV connection",
+        "description": "Test Cloudflare Workers KV connection and return configuration status",
+        "params": {}
+      }
+    }
+  },
+  "language": {
+    "switcher": {
+      "title": "Language"
+    }
+  },
+  "welcome": {
+    "title": "👋 Welcome!",
+    "message": "You can go to the admin page to setup Cloudflare domain and configure your temporary email service.",
+    "go_to_admin": "⚙️ Go to Admin Page",
+    "dismiss": "✓ Got it"
+  },
+  "errors": {
+    "invalid_email": "Invalid email address",
+    "generation_failed": "Failed to generate email",
+    "fetch_failed": "Failed to fetch emails",
+    "network_error": "Network error, please try again",
+    "server_error": "Server error, please try again later",
+    "copy_failed": "Copy failed",
+    "extract_codes_failed": "Failed to extract codes, please try again",
+    "time_unknown": "Unknown time",
+    "time_format_error": "Invalid time format",
+    "email_not_found_title": "Error: {detail}",
+    "email_not_found_message": "Email {email} not found on server.\n\nPossible reasons:\n- Email has expired\n- Token is invalid\n- Backend storage has been cleared"
+  },
+  "messages": {
+    "email_copied": "Email copied to clipboard!",
+    "code_copied": "Verification code copied: {code}",
+    "confirm_delete": "Are you sure you want to delete this email?",
+    "email_deleted": "Email deleted",
+    "auto_refresh_enabled": "Auto refresh enabled (every 10 seconds)",
+    "api_notifications_enabled": "API popup notifications enabled",
+    "api_notifications_disabled": "API popup notifications disabled"
+  },
+  "common_labels": {
+    "random_domain": "🎲 Random Domain (Recommended)",
+    "expired": "Expired"
+  }
+}

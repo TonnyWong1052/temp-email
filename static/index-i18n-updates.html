@@ -1,0 +1,168 @@
+<!-- 這是一個包含 i18n 更新的部分文件，用於手動合併 -->
+<!-- Key sections to update in index.html -->
+
+<!-- Hero section updates -->
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title" data-i18n="pages.home.title">Temporary Email Service</h1>
+        <p class="hero-subtitle" data-i18n="pages.home.subtitle">Fast, secure, disposable emails</p>
+        <div class="hero-features">
+            <div class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span data-i18n="pages.home.features.instant">Instant Generation</span>
+            </div>
+            <div class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 15v2m-6 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span data-i18n="pages.home.features.secure">Secure Encryption</span>
+            </div>
+            <div class="feature-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span data-i18n="pages.home.features.smart">Smart Recognition</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Email generation section updates -->
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <span data-i18n="email.generation.title">Generate Temporary Email</span>
+        </h2>
+        <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" id="apiNotifyToggleBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span id="apiNotifyToggleText" data-i18n="api.notifications.popup_toggle" data-i18n-params='{"status": "On"}'>Popup Notifications: On</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Domain selector updates -->
+<div class="domain-selector">
+    <label for="domainSelect" class="domain-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <span data-i18n="email.generation.domain_select_label">Select Domain:</span>
+    </label>
+    <select id="domainSelect" class="domain-select">
+        <option value="" data-i18n="email.generation.random_domain">🎲 Random Domain (Recommended)</option>
+    </select>
+</div>
+
+<!-- Custom prefix updates -->
+<div class="prefix-input-group">
+    <label for="emailPrefix" class="domain-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <span data-i18n="email.generation.custom_prefix_label">Custom Name (Optional):</span>
+    </label>
+    <input type="text" id="emailPrefix" class="domain-select"
+           data-i18n-placeholder="email.generation.custom_prefix_placeholder"
+           placeholder="Leave empty for random generation, letters and numbers only"
+           maxlength="20" autocomplete="off">
+    <p class="prefix-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 14px; height: 14px; display: inline-block; margin-right: 4px; vertical-align: middle;">
+            <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        <span data-i18n="email.generation.custom_prefix_hint">e.g., user123, hello2024 (letters and numbers only)</span>
+    </p>
+</div>
+
+<!-- Generate button updates -->
+<button class="btn btn-primary btn-large" id="generateBtn">
+    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+    </svg>
+    <span id="generateBtnText" data-i18n="email.generation.generate_button">Generate New Email</span>
+</button>
+
+<!-- Email list updates -->
+<section class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <span data-i18n="email.list.title">My Emails</span>
+            <span class="mail-count-badge" id="emailCount">0</span>
+        </h2>
+        <div class="card-actions">
+            <button class="btn btn-secondary" id="autoRefreshBtn">
+                <span id="autoRefreshText" data-i18n="api.auto_refresh.toggle" data-i18n-params='{"status": "Off"}'>Auto Refresh: Off</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Empty state updates -->
+<div class="empty-state">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+    </svg>
+    <h3 data-i18n="email.list.empty_state_title">No emails created yet</h3>
+    <p data-i18n="email.list.empty_state_message">Click the button above to generate your first temporary email address</p>
+</div>
+
+<!-- API Terminal updates -->
+<section class="card terminal-card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <span data-i18n="api.terminal.title">API Call Terminal</span>
+            <span class="terminal-count" id="terminalCount">0</span>
+        </h2>
+        <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" id="clearTerminalBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span data-i18n="api.terminal.clear_logs">Clear Logs</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Footer updates -->
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4 data-i18n="footer.about.title">About Service</h4>
+            <p data-i18n="footer.about.description">Providing secure and reliable temporary email service</p>
+        </div>
+        <div class="footer-section">
+            <h4 data-i18n="footer.docs.title">Documentation</h4>
+            <a href="/docs" target="_blank" data-i18n="footer.docs.api_docs">API Documentation</a>
+            <a href="/redoc" target="_blank" data-i18n="footer.docs.redoc">ReDoc</a>
+        </div>
+        <div class="footer-section">
+            <h4 data-i18n="footer.resources.title">More Resources</h4>
+            <a href="https://github.com/TonnyWong1052/temp-email" target="_blank" data-i18n="footer.resources.github">GitHub</a>
+            <a href="#" data-i18n="footer.resources.guide">User Guide</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p class="footer-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <span data-i18n="footer.warning">For testing purposes only, do not receive sensitive or important information</span>
+        </p>
+        <p class="footer-copyright" data-i18n="footer.copyright">© 2025 TempMail Pro. All rights reserved.</p>
+    </div>
+</footer>
