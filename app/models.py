@@ -12,6 +12,14 @@ class Code(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
+# 链接模型
+class Link(BaseModel):
+    url: str
+    text: str
+    type: Literal["html", "text"]
+    domain: str
+
+
 # 邮件模型
 class Mail(BaseModel):
     id: str
@@ -24,6 +32,7 @@ class Mail(BaseModel):
     received_at: datetime
     read: bool = False
     codes: Optional[List[Code]] = None
+    links: Optional[List[Link]] = None
 
     class Config:
         populate_by_name = True

@@ -833,7 +833,8 @@ async function fetchMailsForEmail(token) {
                     content: mail.content,  // 完整純文字內容
                     htmlContent: mail.htmlContent,  // 完整 HTML 內容
                     receivedAt: mail.receivedAt,
-                    codes: null  // 驗證碼需要手動提取
+                    codes: null,  // 驗證碼需要手動提取
+                    links: mail.links || []  // 自動提取的鏈接
                 };
             });
 
@@ -1098,6 +1099,15 @@ async function showMailDetail(token, mailId) {
     const viewModeText = document.getElementById('viewModeText');
     if (viewModeText) viewModeText.textContent = 'HTML';
 
+    // 顯示鏈接（如果有）
+    if (cached.links && cached.links.length > 0) {
+        displayLinksInModal(cached.links);
+    } else {
+        // 隱藏鏈接區域
+        const linksSection = document.getElementById('modalLinks');
+        if (linksSection) linksSection.style.display = 'none';
+    }
+
     // 檢查是否已經提取驗證碼
     if (cached.codes !== null && cached.codes !== undefined) {
         // 隱藏提取按鈕，顯示已有的驗證碼
@@ -1195,6 +1205,109 @@ function displayCodesInModal(codes) {
         if (codesHeader) codesHeader.style.display = 'none';
 
         codesSection.style.display = 'block';
+    }
+}
+
+// Display Links in Modal
+function displayLinksInModal(links) {
+    const linksContent = document.getElementById('modalLinksContent');
+    const linksSection = document.getElementById('modalLinks');
+
+    if (!linksContent || !linksSection) return;
+
+    if (links && links.length > 0) {
+        linksContent.innerHTML = links.map(link => {
+            const escapedUrl = escapeHtml(link.url);
+            const escapedText = escapeHtml(link.text || link.url);
+            const shortUrl = link.url.length > 60 ? link.url.substring(0, 57) + '...' : link.url;
+            
+            return `
+                <div class="link-item">
+                    <svg class="link-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                    </svg>
+                    <div class="link-item-content">
+                        <div class="link-item-text">${escapedText}</div>
+                        <div class="link-item-url" title="${escapedUrl}">${escapeHtml(shortUrl)}</div>
+                    </div>
+                    <div class="link-item-actions">
+                        <button class="link-btn link-btn-open" onclick="openLink('${escapedUrl}')" title="Open link in new tab">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                            </svg>
+                            Open
+                        </button>
+                        <button class="link-btn link-btn-copy" onclick="copyLink('${escapedUrl}')" title="Copy link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                            </svg>
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        linksSection.style.display = 'block';
+    } else {
+        linksSection.style.display = 'none';
+    }
+}
+
+// Open link in new tab
+function openLink(url) {
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = url;
+    const decodedUrl = textarea.value;
+    
+    window.open(decodedUrl, '_blank', 'noopener,noreferrer');
+    showToast('Opening link in new tab...', 'success');
+}
+
+// Copy link to clipboard
+function copyLink(url) {
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = url;
+    const decodedUrl = textarea.value;
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(decodedUrl).then(() => {
+            showToast('Link copied to clipboard!', 'success');
+        }).catch(err => {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyText(decodedUrl);
+        });
+    } else {
+        fallbackCopyText(decodedUrl);
+    }
+}
+
+// Fallback copy method
+function fallbackCopyText(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.top = '-9999px';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showToast('Link copied to clipboard!', 'success');
+        } else {
+            showToast('Failed to copy link', 'error');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showToast('Failed to copy link', 'error');
+    } finally {
+        document.body.removeChild(textArea);
     }
 }
 
