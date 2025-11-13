@@ -1069,6 +1069,132 @@ body {
     background: #fffbeb;
 }
 
+/* Mail Links Section */
+.mail-links {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 2px solid #60a5fa;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.links-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
+}
+
+.links-header svg {
+    width: 20px;
+    height: 20px;
+    color: #2563eb;
+    stroke-width: 2;
+    flex-shrink: 0;
+}
+
+.links-header strong {
+    font-size: 1rem;
+    color: var(--gray-800);
+    font-weight: 600;
+}
+
+.links-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.link-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: white;
+    border: 2px solid #60a5fa;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.link-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.link-item-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: #2563eb;
+}
+
+.link-item-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.link-item-text {
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+.link-item-url {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    word-break: break-all;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.link-item-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
+}
+
+.link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    gap: 4px;
+}
+
+.link-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.link-btn-open {
+    background: #2563eb;
+    color: white;
+}
+
+.link-btn-open:hover {
+    background: #1d4ed8;
+}
+
+.link-btn-copy {
+    background: #e0e7ff;
+    color: #2563eb;
+}
+
+.link-btn-copy:hover {
+    background: #c7d2fe;
+}
+
 .mail-content {
     background: var(--gray-50);
     border-radius: var(--radius-lg);
