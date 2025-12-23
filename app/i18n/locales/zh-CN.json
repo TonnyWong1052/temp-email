@@ -345,6 +345,7 @@
       "time": "时间:",
       "verification_codes": "验证码",
       "extract_codes_button": "提取验证码",
+      "clickable_links": "可点击链接",
       "mail_content": "邮件内容",
       "view_mode": "HTML",
       "loading": "载入中...",

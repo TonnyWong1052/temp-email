@@ -7,6 +7,7 @@ from app.services.mail_service import mail_service
 from app.services.storage_service import storage_service
 from app.services.html_sanitizer import html_sanitizer
 from app.services.text_to_html_service import text_to_html_service
+from app.services.link_extraction_service import link_extraction_service
 from app.config import settings, should_use_cloudflare_kv
 
 router = APIRouter(prefix="/api/email", tags=["Email"])
@@ -172,6 +173,10 @@ async def get_mails(
             sanitized_html = text_to_html_service.convert_text_to_html(m.content)
             safe_text_content = m.content or ""
 
+        # 提取鏈接（如果還未提取）
+        if m.links is None:
+            m.links = link_extraction_service.extract_links(m.content, m.html_content)
+
         return {
             "id": m.id,
             "from": m.from_,
@@ -182,6 +187,7 @@ async def get_mails(
             "receivedAt": m.received_at.isoformat(),
             "read": m.read,
             "hasCode": bool(m.codes),
+            "links": m.links or [],  # 返回提取的鏈接
         }
 
     return {
@@ -273,6 +279,10 @@ async def get_mail_detail(token: str, mail_id: str):
         sanitized_html = text_to_html_service.convert_text_to_html(mail.content)
         safe_text_content = mail.content or ""
 
+    # 提取鏈接（如果還未提取）
+    if mail.links is None:
+        mail.links = link_extraction_service.extract_links(mail.content, mail.html_content)
+
     return {
         "success": True,
         "data": {
@@ -285,6 +295,7 @@ async def get_mail_detail(token: str, mail_id: str):
             "htmlContent": sanitized_html,  # 返回增強後的 HTML
             "receivedAt": mail.received_at.isoformat(),
             "read": mail.read,
+            "links": mail.links or [],  # 返回提取的鏈接
         },
     }
 
